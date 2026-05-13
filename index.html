@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnergyGuard — Smart Load Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0f;
+    --surface: #141818;
+    --surface2: #1c2020;
+    --border: #2a3030;
+    --amber: #f5a623;
+    --amber-dim: #7a5212;
+    --green: #3ddc84;
+    --green-dim: #1a4035;
+    --red: #ff4d4d;
+    --red-dim: #4a1515;
+    --blue: #4fc3f7;
+    --blue-dim: #103a4a;
+    --text: #e8edec;
+    --text-dim: #6b7a79;
+    --text-mid: #a8b5b4;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, #1a2020 39px, #1a2020 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, #1a2020 39px, #1a2020 40px);
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--amber);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #000;
+  }
+
+  .logo-text {
+    font-family: var(--cond);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--amber); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-mid);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 2px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .live-clock {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    padding: 20px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    gap: 16px;
+  }
+
+  /* TOP STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.blue::before { background: var(--blue); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card.amber .stat-value { color: var(--amber); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.red .stat-value { color: var(--red); }
+  .stat-card.blue .stat-value { color: var(--blue); }
+
+  .stat-unit {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* QUOTA BAR */
+  .quota-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+  }
+
+  .quota-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .quota-title {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .quota-meta {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .quota-meta-item {
+    text-align: right;
+  }
+
+  .quota-meta-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .quota-meta-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--text);
+    margin-top: 1px;
+  }
+
+  .quota-meta-value.warn { color: var(--amber); }
+  .quota-meta-value.crit { color: var(--red); }
+
+  .quota-bar-track {
+    background: var(--surface2);
+    height: 10px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quota-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--amber));
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .quota-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; width: 2px;
+    background: white;
+    opacity: 0.8;
+  }
+
+  .quota-bar-fill.warn {
+    background: linear-gradient(90deg, var(--amber), var(--red));
+  }
+
+  .quota-bar-fill.crit {
+    background: var(--red);
+  }
+
+  .quota-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* LOAD CHANNELS */
+  .channels-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .section-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-title {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .section-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  /* CHANNEL ROWS */
+  .channel-row {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    transition: background 0.2s;
+  }
+
+  .channel-row:last-child { border-bottom: none; }
+  .channel-row:hover { background: var(--surface2); }
+
+  .channel-row.off {
+    opacity: 0.5;
+  }
+
+  .channel-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .channel-indicator {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .channel-indicator.on {
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .channel-indicator.off {
+    background: var(--text-dim);
+  }
+
+  .channel-indicator.shed {
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+    animation: pulse 1s infinite;
+  }
+
+  .channel-name {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .channel-priority {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 1px 5px;
+    border-radius: 1px;
+    text-transform: uppercase;
+  }
+
+  .channel-priority.high { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
+  .channel-priority.medium { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .channel-priority.low { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-dim); }
+
+  .channel-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .metric {
+    text-align: center;
+  }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .metric-unit {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  /* POWER BAR per channel */
+  .power-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--surface2);
+    margin-top: 6px;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .power-bar-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.8s ease;
+  }
+
+  /* CHANNEL TOGGLE */
+  .toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 5px 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .toggle-btn.active {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* PREDICTION */
+  .prediction-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .pred-body {
+    padding: 16px 18px;
+  }
+
+  .pred-countdown {
+    font-family: var(--mono);
+    font-size: 36px;
+    color: var(--amber);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .pred-countdown.crit { color: var(--red); animation: pulse 1s infinite; }
+  .pred-countdown.safe { color: var(--green); }
+
+  .pred-sublabel {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  .pred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .pred-row:last-child { border-bottom: none; }
+  .pred-key { color: var(--text-dim); }
+  .pred-val { color: var(--text); }
+  .pred-val.warn { color: var(--amber); }
+
+  /* ALERTS LOG */
+  .alerts-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .alert-log {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .alert-item {
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .alert-item:last-child { border-bottom: none; }
+
+  .alert-time {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    padding-top: 2px;
+    width: 50px;
+  }
+
+  .alert-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .alert-dot.info { background: var(--blue); }
+  .alert-dot.warn { background: var(--amber); }
+  .alert-dot.shed { background: var(--red); }
+
+  .alert-msg {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--text-mid);
+    line-height: 1.4;
+  }
+
+  /* QUOTA SETTINGS */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .settings-body {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .setting-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .setting-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .setting-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 8px;
+    width: 80px;
+    text-align: right;
+    outline: none;
+  }
+
+  .setting-input:focus {
+    border-color: var(--amber);
+  }
+
+  .setting-unit {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 24px;
+  }
+
+  .apply-btn {
+    width: 100%;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+
+  .apply-btn:hover {
+    background: var(--amber);
+    color: #000;
+  }
+
+  /* WAVEFORM CHART */
+  .chart-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .chart-body {
+    padding: 12px 18px 16px;
+    position: relative;
+  }
+
+  canvas {
+    width: 100% !important;
+    display: block;
+  }
+
+  /* SHEDDING INDICATOR */
+  .shedding-banner {
+    display: none;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-left: 4px solid var(--red);
+    padding: 10px 16px;
+    margin-bottom: 0;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 1px;
+  }
+
+  .shedding-banner.visible {
+    display: flex;
+    animation: flashBorder 1s infinite;
+  }
+
+  @keyframes flashBorder {
+    0%, 100% { border-color: var(--red); }
+    50% { border-color: var(--amber); }
+  }
+
+  .shed-icon { font-size: 16px; }
+
+  /* CHART LEGEND */
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 8px; height: 2px;
+    border-radius: 1px;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* CONNECTION TAG */
+  .conn-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 8px;
+    letter-spacing: 1px;
+    border: 1px solid;
+    transition: all 0.4s;
+  }
+  .conn-tag.sim        { background: #1a1a2e; border-color: #2a2a5e; color: #6666cc; }
+  .conn-tag.live       { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .conn-tag.lost       { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .conn-tag.connecting { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">ENERGY<span>GUARD</span></div>
+  </div>
+  <div class="header-right">
+    <span class="conn-tag sim" id="connTag">◉ SIMULATION</span>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span>SYSTEM ONLINE</span>
+    </div>
+    <div class="live-clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- SHEDDING BANNER -->
+  <div class="shedding-banner" id="sheddingBanner">
+    <span class="shed-icon">⚠</span>
+    <span>AUTOMATIC LOAD SHEDDING ACTIVE — CONSUMPTION RATE EXCEEDS SUSTAINABLE THRESHOLD</span>
+  </div>
+
+  <!-- TOP STATS -->
+  <div class="stats-row">
+    <div class="stat-card amber">
+      <div class="stat-label">Total Active Power</div>
+      <div class="stat-value" id="totalPower">0.00</div>
+      <div class="stat-unit">WATTS</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Mains Voltage</div>
+      <div class="stat-value" id="mainVoltage">220</div>
+      <div class="stat-unit">VOLTS AC</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Energy Used Today</div>
+      <div class="stat-value" id="energyUsed">0.000</div>
+      <div class="stat-unit">kWh</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Est. Cost (Today)</div>
+      <div class="stat-value" id="estCost">₦0.00</div>
+      <div class="stat-unit">@ ₦225/kWh</div>
+    </div>
+  </div>
+
+  <!-- QUOTA BAR -->
+  <div class="quota-section">
+    <div class="quota-header">
+      <div>
+        <div class="quota-title">Energy Quota Status</div>
+      </div>
+      <div class="quota-meta">
+        <div class="quota-meta-item">
+          <div class="quota-meta-label">Quota Remaining</div>
+          <div class="quota-meta-value" id="quotaRem">--</div>
+        </div>
+        <div class="quota-meta-item">
+          <div class="quota-meta-label">Time Remaining</div>
+          <div class="quota-meta-value warn" id="timeRem">--</div>
+        </div>
+        <div class="quota-meta-item">
+          <div class="quota-meta-label">Sustainable Rate</div>
+          <div class="quota-meta-value" id="sustainRate">--</div>
+        </div>
+      </div>
+    </div>
+    <div class="quota-bar-track">
+      <div class="quota-bar-fill" id="quotaBar" style="width: 100%"></div>
+    </div>
+    <div class="quota-ticks">
+      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- LOAD CHANNELS -->
+      <div class="channels-section">
+        <div class="section-header">
+          <span class="section-title">Load Channels</span>
+          <span class="section-badge" id="activeCount">4 ACTIVE</span>
+        </div>
+
+        <!-- Channel 1: HIGH -->
+        <div class="channel-row" id="ch1-row">
+          <div class="channel-left">
+            <div class="channel-indicator on" id="ch1-ind"></div>
+            <div>
+              <div class="channel-name">Medical / Refrigerator</div>
+              <span class="channel-priority high">HIGH</span>
+            </div>
+          </div>
+          <div>
+            <div class="channel-metrics">
+              <div class="metric">
+                <div class="metric-label">Voltage</div>
+                <div class="metric-val" id="ch1-v">220</div>
+                <div class="metric-unit">V</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Current</div>
+                <div class="metric-val" id="ch1-i">0.0</div>
+                <div class="metric-unit">A</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Power</div>
+                <div class="metric-val" id="ch1-p">0</div>
+                <div class="metric-unit">W</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Energy</div>
+                <div class="metric-val" id="ch1-e">0.000</div>
+                <div class="metric-unit">kWh</div>
+              </div>
+            </div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch1-bar" style="width:0%;background:var(--red)"></div></div>
+          </div>
+          <button class="toggle-btn active" id="ch1-btn" onclick="toggleChannel(1)">ON</button>
+        </div>
+
+        <!-- Channel 2: HIGH -->
+        <div class="channel-row" id="ch2-row">
+          <div class="channel-left">
+            <div class="channel-indicator on" id="ch2-ind"></div>
+            <div>
+              <div class="channel-name">Lighting Circuit</div>
+              <span class="channel-priority high">HIGH</span>
+            </div>
+          </div>
+          <div>
+            <div class="channel-metrics">
+              <div class="metric">
+                <div class="metric-label">Voltage</div>
+                <div class="metric-val" id="ch2-v">220</div>
+                <div class="metric-unit">V</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Current</div>
+                <div class="metric-val" id="ch2-i">0.0</div>
+                <div class="metric-unit">A</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Power</div>
+                <div class="metric-val" id="ch2-p">0</div>
+                <div class="metric-unit">W</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Energy</div>
+                <div class="metric-val" id="ch2-e">0.000</div>
+                <div class="metric-unit">kWh</div>
+              </div>
+            </div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch2-bar" style="width:0%;background:var(--red)"></div></div>
+          </div>
+          <button class="toggle-btn active" id="ch2-btn" onclick="toggleChannel(2)">ON</button>
+        </div>
+
+        <!-- Channel 3: MEDIUM -->
+        <div class="channel-row" id="ch3-row">
+          <div class="channel-left">
+            <div class="channel-indicator on" id="ch3-ind"></div>
+            <div>
+              <div class="channel-name">Fan / TV</div>
+              <span class="channel-priority medium">MEDIUM</span>
+            </div>
+          </div>
+          <div>
+            <div class="channel-metrics">
+              <div class="metric">
+                <div class="metric-label">Voltage</div>
+                <div class="metric-val" id="ch3-v">220</div>
+                <div class="metric-unit">V</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Current</div>
+                <div class="metric-val" id="ch3-i">0.0</div>
+                <div class="metric-unit">A</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Power</div>
+                <div class="metric-val" id="ch3-p">0</div>
+                <div class="metric-unit">W</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Energy</div>
+                <div class="metric-val" id="ch3-e">0.000</div>
+                <div class="metric-unit">kWh</div>
+              </div>
+            </div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch3-bar" style="width:0%;background:var(--amber)"></div></div>
+          </div>
+          <button class="toggle-btn active" id="ch3-btn" onclick="toggleChannel(3)">ON</button>
+        </div>
+
+        <!-- Channel 4: LOW -->
+        <div class="channel-row" id="ch4-row">
+          <div class="channel-left">
+            <div class="channel-indicator on" id="ch4-ind"></div>
+            <div>
+              <div class="channel-name">Air Conditioner</div>
+              <span class="channel-priority low">LOW</span>
+            </div>
+          </div>
+          <div>
+            <div class="channel-metrics">
+              <div class="metric">
+                <div class="metric-label">Voltage</div>
+                <div class="metric-val" id="ch4-v">220</div>
+                <div class="metric-unit">V</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Current</div>
+                <div class="metric-val" id="ch4-i">0.0</div>
+                <div class="metric-unit">A</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Power</div>
+                <div class="metric-val" id="ch4-p">0</div>
+                <div class="metric-unit">W</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Energy</div>
+                <div class="metric-val" id="ch4-e">0.000</div>
+                <div class="metric-unit">kWh</div>
+              </div>
+            </div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch4-bar" style="width:0%;background:var(--blue)"></div></div>
+          </div>
+          <button class="toggle-btn active" id="ch4-btn" onclick="toggleChannel(4)">ON</button>
+        </div>
+      </div>
+
+      <!-- POWER CHART -->
+      <div class="chart-section">
+        <div class="section-header">
+          <span class="section-title">Power Consumption History</span>
+          <span class="section-badge">LAST 60s</span>
+        </div>
+        <div class="chart-body">
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Medical/Fridge</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Lighting</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Fan/TV</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>A/C</div>
+          </div>
+          <canvas id="powerChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- PREDICTION -->
+      <div class="prediction-card">
+        <div class="section-header">
+          <span class="section-title">Depletion Forecast</span>
+        </div>
+        <div class="pred-body">
+          <div class="pred-countdown" id="depletionTime">--h --m</div>
+          <div class="pred-sublabel">UNTIL QUOTA EXHAUSTED</div>
+          <div class="pred-row">
+            <span class="pred-key">Current Rate</span>
+            <span class="pred-val" id="currentRate">-- W</span>
+          </div>
+          <div class="pred-row">
+            <span class="pred-key">Sustainable Rate</span>
+            <span class="pred-val" id="sustainRate2">-- W</span>
+          </div>
+          <div class="pred-row">
+            <span class="pred-key">Quota Remaining</span>
+            <span class="pred-val" id="quotaRemKwh">-- kWh</span>
+          </div>
+          <div class="pred-row">
+            <span class="pred-key">Target Period</span>
+            <span class="pred-val" id="targetPeriod">--</span>
+          </div>
+          <div class="pred-row">
+            <span class="pred-key">Auto Shed Status</span>
+            <span class="pred-val" id="shedStatus">STANDBY</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="settings-card">
+        <div class="section-header">
+          <span class="section-title">Quota Settings</span>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <span class="setting-label">ENERGY QUOTA</span>
+            <div class="setting-control">
+              <input class="setting-input" id="quotaInput" type="number" value="5" min="0.1" step="0.1">
+              <span class="setting-unit">kWh</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">TARGET HOURS</span>
+            <div class="setting-control">
+              <input class="setting-input" id="hoursInput" type="number" value="24" min="1" step="1">
+              <span class="setting-unit">hrs</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">AUTO SHED</span>
+            <div class="setting-control">
+              <button class="toggle-btn active" id="autoShedToggle" onclick="toggleAutoShed()" style="width:60px">ON</button>
+            </div>
+          </div>
+          <button class="apply-btn" onclick="applySettings()">▶ APPLY SETTINGS</button>
+          <button class="apply-btn" onclick="resetEnergy()" style="margin-top:6px;background:var(--red-dim);border-color:var(--red);color:var(--red);">↺ RESET ENERGY COUNTER</button>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="alerts-card">
+        <div class="section-header">
+          <span class="section-title">Alert Log</span>
+          <button onclick="clearAlerts()" style="background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:9px;cursor:pointer;letter-spacing:1px;">CLEAR</button>
+        </div>
+        <div class="alert-log" id="alertLog">
+          <div class="alert-item">
+            <span class="alert-time" id="initTime">--:--</span>
+            <div class="alert-dot info"></div>
+            <span class="alert-msg">System initialised. Simulation mode active.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIG — change SERVER_HOST to your PC's local IP when running the backend
+// ═══════════════════════════════════════════════════════════════════════════════
+const SERVER_HOST = 'energyguard-backend-bksm.onrender.com';
+const WS_URL      = `wss://${SERVER_HOST}/api/data/ws`;
+const API_URL     = `https://${SERVER_HOST}`;
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const TARIFF      = 225;
+const MAX_LOAD    = 1800;
+const CHART_POINTS = 60;
+const BASE_LOADS  = [150, 60, 180, 1500];   // fallback for simulation
+const CHANNEL_NAMES = ['Medical/Fridge', 'Lighting', 'Fan/TV', 'Air Conditioner'];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let channels = [
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+];
+let voltage        = 220;
+let quotaKwh       = 5;
+let targetHours    = 24;
+let energyUsedTotal = 0;
+let autoShed       = true;
+let isShedding     = false;
+let isLiveMode     = false;    // true when WebSocket is connected & receiving
+let isConnecting   = true;     // pauses sim while WS handshake is in progress
+let connectTimeout = null;     // fires if backend doesn't respond in time
+
+const chartData = {
+  ch1: new Array(CHART_POINTS).fill(0),
+  ch2: new Array(CHART_POINTS).fill(0),
+  ch3: new Array(CHART_POINTS).fill(0),
+  ch4: new Array(CHART_POINTS).fill(0),
+};
+
+// ─── CLOCK ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const clockEl = document.getElementById('clock');
+  const initEl  = document.getElementById('initTime');
+  if (clockEl) clockEl.textContent = now.toLocaleTimeString('en-GB');
+  if (initEl)  initEl.textContent  =
+    now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── CONNECTION TAG ───────────────────────────────────────────────────────────
+function setConnTag(state, label) {
+  const el = document.getElementById('connTag');
+  el.className = 'conn-tag ' + state;
+  el.textContent = label;
+}
+
+// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+let ws = null;
+let wsReconnectTimer = null;
+let wsMissedBeats = 0;
+
+function connectWebSocket() {
+  isConnecting = true;
+  setConnTag('connecting', '◎ CONNECTING...');
+  ws = new WebSocket(WS_URL);
+
+  // If backend doesn't respond within 15s (e.g. Render cold-start), fall back to sim
+  connectTimeout = setTimeout(() => {
+    if (isConnecting && !isLiveMode) {
+      isConnecting = false;
+      setConnTag('sim', '◉ SIMULATION');
+      addAlert('warn', 'Backend not reachable. Running simulation mode.');
+    }
+  }, 15000);
+
+  ws.onopen = () => {
+    clearTimeout(connectTimeout);
+    isConnecting = false;
+    isLiveMode = true;
+    wsMissedBeats = 0;
+    setConnTag('live', '● LIVE');
+    addAlert('info', 'WebSocket connected — receiving live data from ESP32.');
+    // Backfill chart with history
+    fetchHistory();
+  };
+
+  ws.onmessage = (event) => {
+    wsMissedBeats = 0;
+    try {
+      const d = JSON.parse(event.data);
+      applyLiveData(d);
+    } catch(e) {
+      console.warn('WS parse error:', e);
+    }
+  };
+
+  ws.onclose = () => {
+    clearTimeout(connectTimeout);
+    isConnecting = false;
+    isLiveMode = false;
+    setConnTag('lost', '○ DISCONNECTED');
+    addAlert('warn', 'Connection lost. Falling back to simulation. Retrying in 5s...');
+    // Retry after 5 seconds
+    wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+  };
+
+  ws.onerror = () => {
+    // onclose will fire after onerror — no duplicate handling needed
+    ws.close();
+  };
+}
+
+// ─── APPLY LIVE DATA FROM ESP32 ──────────────────────────────────────────────
+// Maps the ESP32 JSON payload (short keys) onto our state and renders.
+function applyLiveData(d) {
+  voltage        = d.v   ?? voltage;
+  energyUsedTotal = d.te  ?? energyUsedTotal;
+
+  if (d.ch && d.ch.length === 4) {
+    d.ch.forEach((c, i) => {
+      channels[i].on       = c.on   === 1;
+      channels[i].shedding = c.shed === 1;
+      channels[i].current  = c.i   ?? 0;
+      channels[i].power    = c.p   ?? 0;
+      channels[i].energy   = c.e   ?? channels[i].energy;
+    });
+  }
+
+  // Shedding banner — driven by ESP32 state, not recalculated here
+  const shed = d.shed === 1;
+  document.getElementById('sheddingBanner').classList.toggle('visible', shed);
+  isShedding = shed;
+
+  // Update chart
+  chartData.ch1.push(channels[0].power); chartData.ch1.shift();
+  chartData.ch2.push(channels[1].power); chartData.ch2.shift();
+  chartData.ch3.push(channels[2].power); chartData.ch3.shift();
+  chartData.ch4.push(channels[3].power); chartData.ch4.shift();
+
+  // Render with live prediction values from ESP32
+  renderLive(d);
+  drawChart();
+}
+
+// ─── RENDER (LIVE MODE) ───────────────────────────────────────────────────────
+// Uses prediction values sent directly from the ESP32 / backend.
+function renderLive(d) {
+  const totalPower = channels.reduce((s, c) => s + c.power, 0);
+  const cost       = energyUsedTotal * TARIFF;
+  const qr         = d.qr  ?? 0;
+  const sr         = d.sr  ?? 0;
+  const eta        = d.eta ?? 9999;
+  const pct        = (qr / quotaKwh) * 100;
+
+  document.getElementById('totalPower').textContent  = totalPower.toFixed(1);
+  document.getElementById('mainVoltage').textContent = voltage.toFixed(0);
+  document.getElementById('energyUsed').textContent  = energyUsedTotal.toFixed(3);
+  document.getElementById('estCost').textContent     = '₦' + cost.toFixed(2);
+
+  // Quota bar
+  const bar = document.getElementById('quotaBar');
+  bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  bar.className   = 'quota-bar-fill' + (pct < 20 ? ' crit' : pct < 40 ? ' warn' : '');
+
+  // Prediction panel
+  const hLeft = eta > 999 ? null : Math.floor(eta);
+  const mLeft = eta > 999 ? null : Math.floor((eta - Math.floor(eta)) * 60);
+  const depEl = document.getElementById('depletionTime');
+  if (eta > 999) {
+    depEl.textContent = '∞ hrs';
+    depEl.className   = 'pred-countdown safe';
+  } else {
+    depEl.textContent = hLeft + 'h ' + mLeft + 'm';
+    depEl.className   = 'pred-countdown' + (eta < 2 ? ' crit' : eta < targetHours ? ' warn' : ' safe');
+  }
+
+  document.getElementById('currentRate').textContent   = totalPower.toFixed(0) + ' W';
+  document.getElementById('sustainRate').textContent   = sr.toFixed(0) + ' W';
+  document.getElementById('sustainRate2').textContent  = sr.toFixed(0) + ' W';
+  document.getElementById('quotaRem').textContent      = qr.toFixed(3) + ' kWh';
+  document.getElementById('quotaRemKwh').textContent   = qr.toFixed(3) + ' kWh';
+  document.getElementById('timeRem').textContent       = eta > 999 ? '∞' : hLeft + 'h ' + mLeft + 'm';
+  document.getElementById('targetPeriod').textContent  = targetHours + ' hours';
+
+  // Shed status
+  const shedEl = document.getElementById('shedStatus');
+  if (d.auto === 0) {
+    shedEl.textContent = 'DISABLED'; shedEl.style.color = 'var(--text-dim)';
+  } else if (d.shed === 1) {
+    shedEl.textContent = 'ACTIVE ⚠'; shedEl.style.color = 'var(--red)';
+  } else {
+    shedEl.textContent = 'STANDBY';  shedEl.style.color = 'var(--green)';
+  }
+
+  renderChannels();
+}
+
+// ─── SHARED CHANNEL RENDERER ──────────────────────────────────────────────────
+function renderChannels() {
+  let activeCount = 0;
+  channels.forEach((ch, i) => {
+    const n = i + 1;
+    if (ch.on) activeCount++;
+    document.getElementById('ch' + n + '-v').textContent = ch.on ? voltage.toFixed(0) : '0';
+    document.getElementById('ch' + n + '-i').textContent = ch.current.toFixed(2);
+    document.getElementById('ch' + n + '-p').textContent = ch.power.toFixed(0);
+    document.getElementById('ch' + n + '-e').textContent = ch.energy.toFixed(3);
+    const barPct = (ch.power / MAX_LOAD) * 100;
+    document.getElementById('ch' + n + '-bar').style.width = barPct + '%';
+    document.getElementById('ch' + n + '-ind').className =
+      'channel-indicator ' + (ch.shedding ? 'shed' : ch.on ? 'on' : 'off');
+    document.getElementById('ch' + n + '-row').className =
+      'channel-row' + (ch.on ? '' : ' off');
+    // Sync button state (live mode — ESP32 is authoritative)
+    if (isLiveMode) {
+      const btn = document.getElementById('ch' + n + '-btn');
+      if (ch.shedding) {
+        btn.textContent = 'SHED'; btn.className = 'toggle-btn';
+      } else {
+        btn.textContent = ch.on ? 'ON' : 'OFF';
+        btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+      }
+    }
+  });
+  document.getElementById('activeCount').textContent = activeCount + ' ACTIVE';
+}
+
+// ─── CHART BACKFILL FROM HISTORY ──────────────────────────────────────────────
+async function fetchHistory() {
+  try {
+    const res  = await fetch(`${API_URL}/api/data/history?limit=${CHART_POINTS}`);
+    const json = await res.json();
+    if (!json.readings) return;
+    // Fill chart arrays from oldest to newest
+    const readings = json.readings.slice(-CHART_POINTS);
+    readings.forEach((r, idx) => {
+      if (r.ch && r.ch.length === 4) {
+        chartData.ch1[idx] = r.ch[0].p ?? 0;
+        chartData.ch2[idx] = r.ch[1].p ?? 0;
+        chartData.ch3[idx] = r.ch[2].p ?? 0;
+        chartData.ch4[idx] = r.ch[3].p ?? 0;
+      }
+    });
+    drawChart();
+  } catch(e) {
+    console.log('History fetch failed (backend not running yet):', e.message);
+  }
+}
+
+// ─── SIMULATION FALLBACK ──────────────────────────────────────────────────────
+// Runs only when WebSocket is not connected.
+function simulateSensors() {
+  voltage = 220 + (Math.random() - 0.5) * 10;
+  channels.forEach((ch, i) => {
+    if (!ch.on) { ch.power = 0; ch.current = 0; return; }
+    const noise = 1 + (Math.random() - 0.5) * 0.12;
+    ch.power   = BASE_LOADS[i] * noise;
+    ch.current = ch.power / voltage;
+    ch.energy += (ch.power / 3600) / 1000;
+  });
+  energyUsedTotal = channels.reduce((s, c) => s + c.energy, 0);
+}
+
+function renderSimulated() {
+  const totalPower = channels.reduce((s, c) => s + c.power, 0);
+  const cost       = energyUsedTotal * TARIFF;
+  const remaining  = Math.max(0, quotaKwh - energyUsedTotal);
+  const pct        = (remaining / quotaKwh) * 100;
+  const sustainableW = (remaining * 1000) / targetHours;
+  const hoursLeft  = totalPower > 0 ? (remaining / (totalPower / 1000)) : Infinity;
+  const hLeft = Math.floor(hoursLeft);
+  const mLeft = Math.floor((hoursLeft - hLeft) * 60);
+
+  document.getElementById('totalPower').textContent  = totalPower.toFixed(1);
+  document.getElementById('mainVoltage').textContent = voltage.toFixed(0);
+  document.getElementById('energyUsed').textContent  = energyUsedTotal.toFixed(3);
+  document.getElementById('estCost').textContent     = '₦' + cost.toFixed(2);
+
+  const bar = document.getElementById('quotaBar');
+  bar.style.width = pct + '%';
+  bar.className   = 'quota-bar-fill' + (pct < 20 ? ' crit' : pct < 40 ? ' warn' : '');
+
+  const depEl = document.getElementById('depletionTime');
+  if (!isFinite(hoursLeft)) {
+    depEl.textContent = '∞ hrs'; depEl.className = 'pred-countdown safe';
+  } else {
+    depEl.textContent = hLeft + 'h ' + mLeft + 'm';
+    depEl.className   = 'pred-countdown' + (hoursLeft < 2 ? ' crit' : hoursLeft < targetHours ? ' warn' : ' safe');
+  }
+
+  document.getElementById('currentRate').textContent  = totalPower.toFixed(0) + ' W';
+  document.getElementById('sustainRate').textContent  = sustainableW.toFixed(0) + ' W';
+  document.getElementById('sustainRate2').textContent = sustainableW.toFixed(0) + ' W';
+  document.getElementById('quotaRem').textContent     = remaining.toFixed(3) + ' kWh';
+  document.getElementById('quotaRemKwh').textContent  = remaining.toFixed(3) + ' kWh';
+  document.getElementById('timeRem').textContent      = isFinite(hoursLeft) ? hLeft + 'h ' + mLeft + 'm' : '∞';
+  document.getElementById('targetPeriod').textContent = targetHours + ' hours';
+
+  checkAutoShedSim(totalPower, sustainableW, hoursLeft);
+  renderChannels();
+}
+
+function checkAutoShedSim(totalPower, sustainableW, hoursLeft) {
+  const shedEl = document.getElementById('shedStatus');
+  if (!autoShed) {
+    shedEl.textContent = 'DISABLED'; shedEl.style.color = 'var(--text-dim)';
+    document.getElementById('sheddingBanner').classList.remove('visible');
+    return;
+  }
+  const over = totalPower > sustainableW * 1.05 && hoursLeft < targetHours;
+  if (over) {
+    for (const idx of [3, 2]) {
+      if (channels[idx].on && !channels[idx].shedding) {
+        channels[idx].on = false; channels[idx].shedding = true;
+        addAlert('warn', 'Auto-shed: ' + CHANNEL_NAMES[idx] + ' disconnected');
+        break;
+      }
+    }
+    if (!isShedding) {
+      isShedding = true;
+      document.getElementById('sheddingBanner').classList.add('visible');
+      shedEl.textContent = 'ACTIVE ⚠'; shedEl.style.color = 'var(--red)';
+    }
+  } else {
+    if (isShedding) {
+      channels.forEach((ch, i) => {
+        if (ch.shedding) { ch.on = true; ch.shedding = false; }
+      });
+      isShedding = false;
+      document.getElementById('sheddingBanner').classList.remove('visible');
+      addAlert('info', 'Auto-shed cleared. Loads restored.');
+    }
+    shedEl.textContent = 'STANDBY'; shedEl.style.color = 'var(--green)';
+  }
+}
+
+// ─── SIMULATION LOOP (runs always, but only renders when not live/connecting) ──
+setInterval(() => {
+  if (isLiveMode || isConnecting) return;   // live or still trying — skip sim
+  simulateSensors();
+  chartData.ch1.push(channels[0].power); chartData.ch1.shift();
+  chartData.ch2.push(channels[1].power); chartData.ch2.shift();
+  chartData.ch3.push(channels[2].power); chartData.ch3.shift();
+  chartData.ch4.push(channels[3].power); chartData.ch4.shift();
+  renderSimulated();
+  drawChart();
+}, 1000);
+
+// ─── CHART ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('powerChart');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width  = canvas.parentElement.clientWidth - 36;
+  canvas.height = 120;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawChart() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#1e2828'; ctx.lineWidth = 1;
+  for (let y = 0; y <= 4; y++) {
+    ctx.beginPath(); ctx.moveTo(0, (H/4)*y); ctx.lineTo(W, (H/4)*y); ctx.stroke();
+  }
+  const maxPower = 2000;
+  [
+    { data: chartData.ch1, color: '#ff4d4d' },
+    { data: chartData.ch2, color: '#3ddc84' },
+    { data: chartData.ch3, color: '#f5a623' },
+    { data: chartData.ch4, color: '#4fc3f7' },
+  ].forEach(({ data, color }) => {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    data.forEach((v, i) => {
+      const x = (i / (CHART_POINTS - 1)) * W;
+      const y = H - (v / maxPower) * H;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+}
+
+// ─── USER CONTROLS ────────────────────────────────────────────────────────────
+function toggleChannel(n) {
+  const i   = n - 1;
+  const ch  = channels[i];
+  const newState = !ch.on;
+
+  if (isLiveMode) {
+    // Send command to backend → ESP32 will apply it and send back updated state
+    sendCommand({ cmd: 'toggle', ch: i, val: newState ? 1 : 0 });
+    addAlert('info', CHANNEL_NAMES[i] + ' command sent: ' + (newState ? 'ON' : 'OFF'));
+  } else {
+    // Simulation: apply locally
+    ch.on = newState; ch.shedding = false;
+    if (!ch.on) ch.power = 0;
+    const btn = document.getElementById('ch' + n + '-btn');
+    btn.textContent = ch.on ? 'ON' : 'OFF';
+    btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+    addAlert('info', CHANNEL_NAMES[i] + ' manually turned ' + (ch.on ? 'ON' : 'OFF'));
+  }
+}
+
+function toggleAutoShed() {
+  autoShed = !autoShed;
+  const btn = document.getElementById('autoShedToggle');
+  btn.textContent = autoShed ? 'ON' : 'OFF';
+  btn.className   = 'toggle-btn' + (autoShed ? ' active' : '');
+  if (isLiveMode) {
+    sendCommand({ cmd: 'autoshed', val: autoShed ? 1 : 0 });
+  }
+  addAlert('info', 'Auto-shed ' + (autoShed ? 'enabled' : 'disabled'));
+}
+
+function applySettings() {
+  const q = parseFloat(document.getElementById('quotaInput').value);
+  const h = parseFloat(document.getElementById('hoursInput').value);
+  if (q > 0 && h > 0) {
+    quotaKwh    = q;
+    targetHours = h;
+    if (isLiveMode) {
+      sendCommand({ cmd: 'quota', kwh: q, h: h });
+    }
+    addAlert('info', 'Settings updated: Quota=' + q + 'kWh, Period=' + h + 'h');
+  }
+}
+
+// ─── SEND COMMAND TO BACKEND ──────────────────────────────────────────────────
+async function sendCommand(payload) {
+  try {
+    const res = await fetch(`${API_URL}/api/commands`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch(e) {
+    addAlert('warn', 'Command failed: ' + e.message);
+  }
+}
+
+// ─── ENERGY RESET ─────────────────────────────────────────────────────────────
+function resetEnergy() {
+  energyUsedTotal = 0;
+  channels.forEach(ch => { ch.energy = 0; });
+  if (isLiveMode) {
+    sendCommand({ cmd: 'reset_energy' });
+  }
+  addAlert('info', 'Energy counters reset to zero.');
+}
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+function clearAlerts() {
+  document.getElementById('alertLog').innerHTML = '';
+}
+
+function addAlert(type, msg) {
+  const log  = document.getElementById('alertLog');
+  const item = document.createElement('div');
+  item.className = 'alert-item';
+  const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  item.innerHTML = `
+    <span class="alert-time">${t}</span>
+    <div class="alert-dot ${type}"></div>
+    <span class="alert-msg">${msg}</span>
+  `;
+  log.insertBefore(item, log.firstChild);
+  if (log.children.length > 20) log.removeChild(log.lastChild);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+addAlert('info', 'System initialised. Attempting backend connection...');
+connectWebSocket();
+</script>
+</body>
+</html>
