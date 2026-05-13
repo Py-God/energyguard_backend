@@ -1078,6 +1078,7 @@ let isShedding     = false;
 let isLiveMode     = false;    // true when WebSocket is connected & receiving
 let isConnecting   = true;     // pauses sim while WS handshake is in progress
 let connectTimeout = null;     // fires if backend doesn't respond in time
+const pendingToggle = [0, 0, 0, 0]; // timestamp (ms) per channel; blocks applyLiveData overwrite
 
 const chartData = {
   ch1: new Array(CHART_POINTS).fill(0),
@@ -1169,7 +1170,10 @@ function applyLiveData(d) {
 
   if (d.ch && d.ch.length === 4) {
     d.ch.forEach((c, i) => {
-      channels[i].on       = c.on   === 1;
+      // If user just toggled this channel, don't let stale ESP32 data flip it back
+      if (Date.now() > pendingToggle[i]) {
+        channels[i].on = c.on === 1;
+      }
       channels[i].shedding = c.shed === 1;
       channels[i].current  = c.i   ?? 0;
       channels[i].power    = c.p   ?? 0;
@@ -1434,23 +1438,23 @@ function drawChart() {
 
 // ─── USER CONTROLS ────────────────────────────────────────────────────────────
 function toggleChannel(n) {
-  const i   = n - 1;
-  const ch  = channels[i];
+  const i        = n - 1;
+  const ch       = channels[i];
   const newState = !ch.on;
 
+  // Always update local state + button immediately (optimistic update)
+  ch.on = newState; ch.shedding = false;
+  if (!ch.on) ch.power = 0;
+  const btn = document.getElementById('ch' + n + '-btn');
+  btn.textContent = ch.on ? 'ON' : 'OFF';
+  btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+
   if (isLiveMode) {
-    // Send command to backend → ESP32 will apply it and send back updated state
+    // Lock this channel for 3s so incoming WS data can't overwrite the button
+    pendingToggle[i] = Date.now() + 3000;
     sendCommand({ cmd: 'toggle', ch: i, val: newState ? 1 : 0 });
-    addAlert('info', CHANNEL_NAMES[i] + ' command sent: ' + (newState ? 'ON' : 'OFF'));
-  } else {
-    // Simulation: apply locally
-    ch.on = newState; ch.shedding = false;
-    if (!ch.on) ch.power = 0;
-    const btn = document.getElementById('ch' + n + '-btn');
-    btn.textContent = ch.on ? 'ON' : 'OFF';
-    btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
-    addAlert('info', CHANNEL_NAMES[i] + ' manually turned ' + (ch.on ? 'ON' : 'OFF'));
   }
+  addAlert('info', CHANNEL_NAMES[i] + ' turned ' + (ch.on ? 'ON' : 'OFF'));
 }
 
 function toggleAutoShed() {
