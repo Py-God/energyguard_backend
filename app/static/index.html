@@ -167,7 +167,7 @@
             </div>
             <div class="power-bar"><div class="power-bar-fill" id="ch2-bar" style="width:0%;background:var(--red)"></div></div>
           </div>
-          <button class="toggle-btn active" id="ch2-btn" onclick="toggleChannel(2)">ON</button>
+          <button class="toggle-btn" id="ch2-btn" onclick="toggleChannel(2)">OFF</button>
         </div>
 
         <!-- Channel 3: MEDIUM -->
@@ -204,7 +204,7 @@
             </div>
             <div class="power-bar"><div class="power-bar-fill" id="ch3-bar" style="width:0%;background:var(--amber)"></div></div>
           </div>
-          <button class="toggle-btn active" id="ch3-btn" onclick="toggleChannel(3)">ON</button>
+          <button class="toggle-btn" id="ch3-btn" onclick="toggleChannel(3)">OFF</button>
         </div>
 
         <!-- Channel 4: LOW -->
@@ -241,7 +241,7 @@
             </div>
             <div class="power-bar"><div class="power-bar-fill" id="ch4-bar" style="width:0%;background:var(--blue)"></div></div>
           </div>
-          <button class="toggle-btn active" id="ch4-btn" onclick="toggleChannel(4)">ON</button>
+          <button class="toggle-btn" id="ch4-btn" onclick="toggleChannel(4)">OFF</button>
         </div>
       </div>
 
@@ -364,10 +364,10 @@ const CHANNEL_NAMES = ['Medical/Fridge', 'Lighting', 'Fan/TV', 'Air Conditioner'
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let channels = [
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+  { on: false, power: 0, current: 0, energy: 0, shedding: false },
+  { on: false, power: 0, current: 0, energy: 0, shedding: false },
+  { on: false, power: 0, current: 0, energy: 0, shedding: false },
+  { on: false, power: 0, current: 0, energy: 0, shedding: false },
 ];
 let voltage        = 220;
 let quotaKwh       = 5;
@@ -460,6 +460,30 @@ function connectWebSocket() {
     // onclose will fire after onerror — no duplicate handling needed
     ws.close();
   };
+}
+
+function initDashboard() {
+    fetch('/api/data/latest')
+        .then(response => {
+            if (response.ok) return response.json();
+            throw new Error('No data from ESP32 yet');
+        })
+        .then(data => {
+            // Loop through each channel and apply the correct active/inactive classes
+            data.ch.forEach((channel, index) => {
+                const btn = document.getElementById(`toggle-ch${index}`);
+                channelStates[index] = !!channel.on; // Set local JS state to match database (0 or 1)
+                
+                if (channel.on === 1) {
+                    btn.classList.add('active');
+                    btn.innerText = 'ON';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerText = 'OFF';
+                }
+            });
+        })
+        .catch(err => console.log("Starting with default states: ", err));
 }
 
 // ─── APPLY LIVE DATA FROM ESP32 ──────────────────────────────────────────────
