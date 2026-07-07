@@ -462,30 +462,6 @@ function connectWebSocket() {
   };
 }
 
-function initDashboard() {
-    fetch('/api/data/latest')
-        .then(response => {
-            if (response.ok) return response.json();
-            throw new Error('No data from ESP32 yet');
-        })
-        .then(data => {
-            // Loop through each channel and apply the correct active/inactive classes
-            data.ch.forEach((channel, index) => {
-                const btn = document.getElementById(`toggle-ch${index}`);
-                channelStates[index] = !!channel.on; // Set local JS state to match database (0 or 1)
-                
-                if (channel.on === 1) {
-                    btn.classList.add('active');
-                    btn.innerText = 'ON';
-                } else {
-                    btn.classList.remove('active');
-                    btn.innerText = 'OFF';
-                }
-            });
-        })
-        .catch(err => console.log("Starting with default states: ", err));
-}
-
 // ─── APPLY LIVE DATA FROM ESP32 ──────────────────────────────────────────────
 // Maps the ESP32 JSON payload (short keys) onto our state and renders.
 function applyLiveData(d) {
