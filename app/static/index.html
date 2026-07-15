@@ -96,12 +96,13 @@
           <span class="section-badge" id="activeCount">3 ACTIVE</span>
         </div>
 
-        <!-- Channel 1: HIGH
+
+        <!-- Channel 2: HIGH -->
         <div class="channel-row" id="ch1-row">
           <div class="channel-left">
             <div class="channel-indicator on" id="ch1-ind"></div>
             <div>
-              <div class="channel-name">Medical / Refrigerator</div>
+              <div class="channel-name">Lighting Circuit</div>
               <span class="channel-priority high">HIGH</span>
             </div>
           </div>
@@ -128,18 +129,18 @@
                 <div class="metric-unit">kWh</div>
               </div>
             </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch1-bar" style="width:0%;background:var(--red)"></div></div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch1-bar" style="width:0%;background:var(--green)"></div></div>
           </div>
           <button class="toggle-btn active" id="ch1-btn" onclick="toggleChannel(1)">ON</button>
-        </div> -->
+        </div>
 
-        <!-- Channel 2: HIGH -->
+        <!-- Channel 3: MEDIUM -->
         <div class="channel-row" id="ch2-row">
           <div class="channel-left">
             <div class="channel-indicator on" id="ch2-ind"></div>
             <div>
-              <div class="channel-name">Lighting Circuit</div>
-              <span class="channel-priority high">HIGH</span>
+              <div class="channel-name">Fan / TV</div>
+              <span class="channel-priority medium">MEDIUM</span>
             </div>
           </div>
           <div>
@@ -165,18 +166,18 @@
                 <div class="metric-unit">kWh</div>
               </div>
             </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch2-bar" style="width:0%;background:var(--red)"></div></div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch2-bar" style="width:0%;background:var(--amber)"></div></div>
           </div>
           <button class="toggle-btn active" id="ch2-btn" onclick="toggleChannel(2)">ON</button>
         </div>
 
-        <!-- Channel 3: MEDIUM -->
+        <!-- Channel 4: LOW -->
         <div class="channel-row" id="ch3-row">
           <div class="channel-left">
             <div class="channel-indicator on" id="ch3-ind"></div>
             <div>
-              <div class="channel-name">Fan / TV</div>
-              <span class="channel-priority medium">MEDIUM</span>
+              <div class="channel-name">Air Conditioner</div>
+              <span class="channel-priority low">LOW</span>
             </div>
           </div>
           <div>
@@ -202,46 +203,9 @@
                 <div class="metric-unit">kWh</div>
               </div>
             </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch3-bar" style="width:0%;background:var(--amber)"></div></div>
+            <div class="power-bar"><div class="power-bar-fill" id="ch3-bar" style="width:0%;background:var(--blue)"></div></div>
           </div>
           <button class="toggle-btn active" id="ch3-btn" onclick="toggleChannel(3)">ON</button>
-        </div>
-
-        <!-- Channel 4: LOW -->
-        <div class="channel-row" id="ch4-row">
-          <div class="channel-left">
-            <div class="channel-indicator on" id="ch4-ind"></div>
-            <div>
-              <div class="channel-name">Air Conditioner</div>
-              <span class="channel-priority low">LOW</span>
-            </div>
-          </div>
-          <div>
-            <div class="channel-metrics">
-              <div class="metric">
-                <div class="metric-label">Voltage</div>
-                <div class="metric-val" id="ch4-v">220</div>
-                <div class="metric-unit">V</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Current</div>
-                <div class="metric-val" id="ch4-i">0.0</div>
-                <div class="metric-unit">A</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Power</div>
-                <div class="metric-val" id="ch4-p">0</div>
-                <div class="metric-unit">W</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-val" id="ch4-e">0.000</div>
-                <div class="metric-unit">kWh</div>
-              </div>
-            </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch4-bar" style="width:0%;background:var(--blue)"></div></div>
-          </div>
-          <button class="toggle-btn active" id="ch4-btn" onclick="toggleChannel(4)">ON</button>
         </div>
       </div>
 
@@ -253,7 +217,6 @@
         </div>
         <div class="chart-body">
           <div class="chart-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Medical/Fridge</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Lighting</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Fan/TV</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>A/C</div>
@@ -359,15 +322,19 @@ const API_URL     = `https://${SERVER_HOST}`;
 const TARIFF      = 225;
 const MAX_LOAD    = 1800;
 const CHART_POINTS = 60;
-const BASE_LOADS  = [150, 60, 180, 1500];   // fallback for simulation
-const CHANNEL_NAMES = ['Medical/Fridge', 'Lighting', 'Fan/TV', 'Air Conditioner'];
+// Frontend models only the three metered channels. CH_MAP maps each
+// frontend index -> its index in the ESP32/backend payload (d.ch[...]),
+// which still reports 4 entries (index 0 = unmetered Medical/Fridge).
+// If you later set NUM_CHANNELS = 3 in the firmware, change CH_MAP to [0, 1, 2].
+const CH_MAP        = [1, 2, 3];
+const BASE_LOADS    = [60, 180, 1500];        // sim fallback (Lighting, Fan/TV, A/C)
+const CHANNEL_NAMES = ['Lighting', 'Fan/TV', 'Air Conditioner'];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let channels = [
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // Lighting  (HIGH)
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // Fan/TV    (MEDIUM)
+  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // A/C       (LOW)
 ];
 let voltage        = 220;
 let quotaKwh       = 5;
@@ -378,13 +345,12 @@ let isShedding     = false;
 let isLiveMode     = false;    // true when WebSocket is connected & receiving
 let isConnecting   = true;     // pauses sim while WS handshake is in progress
 let connectTimeout = null;     // fires if backend doesn't respond in time
-const pendingToggle = [0, 0, 0, 0]; // timestamp (ms) per channel; blocks applyLiveData overwrite
+const pendingToggle = [0, 0, 0]; // timestamp (ms) per channel; blocks applyLiveData overwrite
 
 const chartData = {
-  ch1: new Array(CHART_POINTS).fill(0),
-  ch2: new Array(CHART_POINTS).fill(0),
-  ch3: new Array(CHART_POINTS).fill(0),
-  ch4: new Array(CHART_POINTS).fill(0),
+  ch1: new Array(CHART_POINTS).fill(0),  // Lighting
+  ch2: new Array(CHART_POINTS).fill(0),  // Fan/TV
+  ch3: new Array(CHART_POINTS).fill(0),  // A/C
 };
 
 // ─── CLOCK ────────────────────────────────────────────────────────────────────
@@ -468,8 +434,10 @@ function applyLiveData(d) {
   voltage        = d.v   ?? voltage;
   energyUsedTotal = d.te  ?? energyUsedTotal;
 
-  if (d.ch && d.ch.length === 4) {
-    d.ch.forEach((c, i) => {
+  if (d.ch) {
+    CH_MAP.forEach((p, i) => {
+      const c = d.ch[p];
+      if (!c) return;                 // payload missing this channel — skip
       const expected = channels[i].on;
       if (Date.now() > pendingToggle[i] || (c.on === 1) === expected) {
         channels[i].on = c.on === 1;
@@ -491,7 +459,6 @@ function applyLiveData(d) {
   chartData.ch1.push(channels[0].power); chartData.ch1.shift();
   chartData.ch2.push(channels[1].power); chartData.ch2.shift();
   chartData.ch3.push(channels[2].power); chartData.ch3.shift();
-  chartData.ch4.push(channels[3].power); chartData.ch4.shift();
 
   // Render with live prediction values from ESP32
   renderLive(d);
@@ -556,6 +523,11 @@ function renderChannels() {
   let activeCount = 0;
   channels.forEach((ch, i) => {
     const n = i + 1;
+    // Skip channels whose HTML is not present. Belt-and-suspenders: without
+    // this, getElementById returns null and setting .textContent throws,
+    // halting the render for every channel below it.
+    const row = document.getElementById('ch' + n + '-row');
+    if (!row) return;
     if (ch.on) activeCount++;
     document.getElementById('ch' + n + '-v').textContent = ch.on ? voltage.toFixed(0) : '0';
     document.getElementById('ch' + n + '-i').textContent = ch.current.toFixed(2);
@@ -565,16 +537,17 @@ function renderChannels() {
     document.getElementById('ch' + n + '-bar').style.width = barPct + '%';
     document.getElementById('ch' + n + '-ind').className =
       'channel-indicator ' + (ch.shedding ? 'shed' : ch.on ? 'on' : 'off');
-    document.getElementById('ch' + n + '-row').className =
-      'channel-row' + (ch.on ? '' : ' off');
+    row.className = 'channel-row' + (ch.on ? '' : ' off');
     // Sync button state (live mode — ESP32 is authoritative)
     if (isLiveMode) {
       const btn = document.getElementById('ch' + n + '-btn');
-      if (ch.shedding) {
-        btn.textContent = 'SHED'; btn.className = 'toggle-btn';
-      } else {
-        btn.textContent = ch.on ? 'ON' : 'OFF';
-        btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+      if (btn) {
+        if (ch.shedding) {
+          btn.textContent = 'SHED'; btn.className = 'toggle-btn';
+        } else {
+          btn.textContent = ch.on ? 'ON' : 'OFF';
+          btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+        }
       }
     }
   });
@@ -590,11 +563,10 @@ async function fetchHistory() {
     // Fill chart arrays from oldest to newest
     const readings = json.readings.slice(-CHART_POINTS);
     readings.forEach((r, idx) => {
-      if (r.ch && r.ch.length === 4) {
-        chartData.ch1[idx] = r.ch[0].p ?? 0;
-        chartData.ch2[idx] = r.ch[1].p ?? 0;
-        chartData.ch3[idx] = r.ch[2].p ?? 0;
-        chartData.ch4[idx] = r.ch[3].p ?? 0;
+      if (r.ch) {
+        chartData.ch1[idx] = r.ch[CH_MAP[0]]?.p ?? 0;
+        chartData.ch2[idx] = r.ch[CH_MAP[1]]?.p ?? 0;
+        chartData.ch3[idx] = r.ch[CH_MAP[2]]?.p ?? 0;
       }
     });
     drawChart();
@@ -665,7 +637,7 @@ function checkAutoShedSim(totalPower, sustainableW, hoursLeft) {
   }
   const over = totalPower > sustainableW * 1.05 && hoursLeft < targetHours;
   if (over) {
-    for (const idx of [3, 2]) {
+    for (const idx of [2, 1]) {   // A/C (LOW) first, then Fan/TV (MEDIUM); Lighting (HIGH) never
       if (channels[idx].on && !channels[idx].shedding) {
         channels[idx].on = false; channels[idx].shedding = true;
         addAlert('warn', 'Auto-shed: ' + CHANNEL_NAMES[idx] + ' disconnected');
@@ -697,7 +669,6 @@ setInterval(() => {
   chartData.ch1.push(channels[0].power); chartData.ch1.shift();
   chartData.ch2.push(channels[1].power); chartData.ch2.shift();
   chartData.ch3.push(channels[2].power); chartData.ch3.shift();
-  chartData.ch4.push(channels[3].power); chartData.ch4.shift();
   renderSimulated();
   drawChart();
 }, 1000);
@@ -722,10 +693,9 @@ function drawChart() {
   }
   const maxPower = 2000;
   [
-    { data: chartData.ch1, color: '#ff4d4d' },
-    { data: chartData.ch2, color: '#3ddc84' },
-    { data: chartData.ch3, color: '#f5a623' },
-    { data: chartData.ch4, color: '#4fc3f7' },
+    { data: chartData.ch1, color: '#3ddc84' },  // Lighting
+    { data: chartData.ch2, color: '#f5a623' },  // Fan/TV
+    { data: chartData.ch3, color: '#4fc3f7' },  // A/C
   ].forEach(({ data, color }) => {
     ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
     data.forEach((v, i) => {
@@ -753,7 +723,7 @@ function toggleChannel(n) {
   if (isLiveMode) {
     // Lock this channel for 3s so incoming WS data can't overwrite the button
     pendingToggle[i] = Date.now() + 3000;
-    sendCommand({ cmd: 'toggle', ch: i, val: newState ? 1 : 0 });
+    sendCommand({ cmd: 'toggle', ch: CH_MAP[i], val: newState ? 1 : 0 });
   }
   addAlert('info', CHANNEL_NAMES[i] + ' turned ' + (ch.on ? 'ON' : 'OFF'));
 }
