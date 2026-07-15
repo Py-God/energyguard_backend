@@ -345,7 +345,15 @@ let isShedding     = false;
 let isLiveMode     = false;    // true when WebSocket is connected & receiving
 let isConnecting   = true;     // pauses sim while WS handshake is in progress
 let connectTimeout = null;     // fires if backend doesn't respond in time
-const pendingToggle = [0, 0, 0]; // timestamp (ms) per channel; blocks applyLiveData overwrite
+// ── Optimistic-toggle reconciliation ─────────────────────────────────────────
+// When the user flips a switch we record the desired on-state and keep showing
+// it until the ESP32 confirms *that exact state* (see applyLiveData). This
+// survives the multi-second command round-trip (backend queue -> ESP32 poll ~1s
+// -> relay -> next sensor POST ~2s -> WS) without ever adopting a stale frame.
+//   desired[i] === null  ->  not awaiting confirmation; device is authoritative.
+const desired = [null, null, null];   // last commanded on-state, per channel
+const cmdTime = [0, 0, 0];            // ms timestamp the command was sent
+const CONFIRM_TIMEOUT = 10000;        // give up waiting after 10s, then trust device
 
 const chartData = {
   ch1: new Array(CHART_POINTS).fill(0),  // Lighting
@@ -438,12 +446,33 @@ function applyLiveData(d) {
     CH_MAP.forEach((p, i) => {
       const c = d.ch[p];
       if (!c) return;                 // payload missing this channel — skip
-      const expected = channels[i].on;
-      if (Date.now() > pendingToggle[i] || (c.on === 1) === expected) {
-        channels[i].on = c.on === 1;
-        pendingToggle[i] = 0; // clear lock once confirmed
+      const reportedOn = c.on === 1;
+
+      // ── On/off reconciliation — the ESP32 relay is the source of truth ──
+      if (desired[i] === null) {
+        // Not awaiting confirmation: accept the device state. This also lets
+        // externally-driven changes (auto-shed, LCD, another client) show up.
+        channels[i].on       = reportedOn;
+        channels[i].shedding = c.shed === 1;
+      } else if (reportedOn === desired[i]) {
+        // Device confirmed our command — adopt it and stop tracking.
+        channels[i].on       = reportedOn;
+        channels[i].shedding = c.shed === 1;
+        desired[i] = null;
+      } else if (Date.now() - cmdTime[i] > CONFIRM_TIMEOUT) {
+        // Never confirmed within the round-trip budget: trust the device and
+        // surface the mismatch so the switch never silently lies to the user.
+        channels[i].on       = reportedOn;
+        channels[i].shedding = c.shed === 1;
+        addAlert('warn', CHANNEL_NAMES[i] + ' did not confirm — showing actual state (' + (reportedOn ? 'ON' : 'OFF') + ')');
+        desired[i] = null;
+      } else {
+        // Command still in flight and this frame is stale — keep the user's
+        // intent on screen; do NOT overwrite it with the old device state.
+        channels[i].on       = desired[i];
+        channels[i].shedding = false;
       }
-      channels[i].shedding = c.shed === 1;
+
       channels[i].current  = c.i   ?? 0;
       channels[i].power    = c.p   ?? 0;
       channels[i].energy   = c.e   ?? channels[i].energy;
@@ -721,8 +750,11 @@ function toggleChannel(n) {
   btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
 
   if (isLiveMode) {
-    // Lock this channel for 3s so incoming WS data can't overwrite the button
-    pendingToggle[i] = Date.now() + 3000;
+    // Track intent until the ESP32 confirms it (reconciled in applyLiveData).
+    // Re-clicking simply updates the target; the device queue is FIFO so the
+    // last command wins, and reconciliation converges without desyncing.
+    desired[i] = newState;
+    cmdTime[i] = Date.now();
     sendCommand({ cmd: 'toggle', ch: CH_MAP[i], val: newState ? 1 : 0 });
   }
   addAlert('info', CHANNEL_NAMES[i] + ' turned ' + (ch.on ? 'ON' : 'OFF'));
