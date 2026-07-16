@@ -59,6 +59,14 @@ class SensorPayload(BaseModel):
     shed:  int                 = Field(...,  description="1 = system is shedding")
     auto:  int                 = Field(...,  description="1 = auto-shed enabled")
 
+    # Quota + target period, reported BY the device. These now persist in the
+    # ESP32's NVS, which makes the device authoritative: the dashboard must
+    # render what it is told instead of assuming its own local defaults still
+    # match. Optional, so firmware predating these fields still validates rather
+    # than 422-ing every POST during a staggered rollout.
+    q:     Optional[float]     = Field(None, gt=0, description="Energy quota (kWh)")
+    th:    Optional[float]     = Field(None, gt=0, description="Target period (hours)")
+
 
 # ── Enriched reading stored in memory (adds server timestamp) ─
 class StoredReading(BaseModel):

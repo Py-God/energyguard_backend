@@ -553,6 +553,14 @@
         voltage = d.v ?? voltage;
         energyUsedTotal = d.te ?? energyUsedTotal;
 
+        // Quota + target period now come FROM the device (persisted in NVS).
+        // Previously these were frontend-local, so the quota bar was drawn as
+        // qr/5.0 no matter what the ESP32 actually held, and a page reload threw
+        // away whatever the user had set. The device is the source of truth.
+        if (d.q  != null) quotaKwh    = d.q;
+        if (d.th != null) targetHours = d.th;
+        syncSettingInputs();
+
         if (d.ch) {
           CH_MAP.forEach((p, i) => {
             const c = d.ch[p];
@@ -614,6 +622,15 @@
         // Render with live prediction values from ESP32
         renderLive(d);
         drawChart();
+      }
+
+      // Reflect device-reported settings in the inputs, but never yank a field
+      // out from under someone mid-edit.
+      function syncSettingInputs() {
+        const qEl = document.getElementById("quotaInput");
+        const hEl = document.getElementById("hoursInput");
+        if (qEl && document.activeElement !== qEl) qEl.value = quotaKwh;
+        if (hEl && document.activeElement !== hEl) hEl.value = targetHours;
       }
 
       // ─── RENDER (LIVE MODE) ───────────────────────────────────────────────────────
@@ -941,12 +958,13 @@
         const q = parseFloat(document.getElementById("quotaInput").value);
         const h = parseFloat(document.getElementById("hoursInput").value);
         if (q > 0 && h > 0) {
-          quotaKwh = q;
-          targetHours = h;
+          // Don't set quotaKwh/targetHours here. The device echoes them back in
+          // d.q/d.th once it has actually stored them; adopting them locally
+          // first would show the new quota even if the command never landed.
           sendCommand({ cmd: "quota", kwh: q, h: h });
           addAlert(
             "info",
-            "Settings updated: Quota=" + q + "kWh, Period=" + h + "h",
+            "Quota " + q + "kWh / " + h + "h requested — awaiting device.",
           );
         }
       }
@@ -975,7 +993,7 @@
         // display would show 0.000 kWh whether or not the ESP32 actually honoured
         // the command. Wait for the next frame to tell us what really happened.
         sendCommand({ cmd: "reset_energy" });
-        addAlert("info", "Energy reset requested — awaiting device confirmation.");
+        addAlert("info", "New energy period requested — awaiting device.");
       }
 
       // ─── ALERTS ───────────────────────────────────────────────────────────────────
