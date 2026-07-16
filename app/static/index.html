@@ -1,835 +1,1008 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EnergyGuard — Smart Load Management</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-
-<header>
-  <div class="logo">
-    <div class="logo-icon">⚡</div>
-    <div class="logo-text">ENERGY<span>GUARD</span></div>
-  </div>
-  <div class="header-right">
-    <span class="conn-tag sim" id="connTag">◉ SIMULATION</span>
-    <div class="status-pill">
-      <div class="status-dot"></div>
-      <span>SYSTEM ONLINE</span>
-    </div>
-    <div class="live-clock" id="clock">--:--:--</div>
-  </div>
-</header>
-
-<main>
-
-  <!-- SHEDDING BANNER -->
-  <div class="shedding-banner" id="sheddingBanner">
-    <span class="shed-icon">⚠</span>
-    <span>AUTOMATIC LOAD SHEDDING ACTIVE — CONSUMPTION RATE EXCEEDS SUSTAINABLE THRESHOLD</span>
-  </div>
-
-  <!-- TOP STATS -->
-  <div class="stats-row">
-    <div class="stat-card amber">
-      <div class="stat-label">Total Active Power</div>
-      <div class="stat-value" id="totalPower">0.00</div>
-      <div class="stat-unit">WATTS</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-label">Mains Voltage</div>
-      <div class="stat-value" id="mainVoltage">220</div>
-      <div class="stat-unit">VOLTS AC</div>
-    </div>
-    <div class="stat-card blue">
-      <div class="stat-label">Energy Used Today</div>
-      <div class="stat-value" id="energyUsed">0.000</div>
-      <div class="stat-unit">kWh</div>
-    </div>
-    <div class="stat-card red">
-      <div class="stat-label">Est. Cost (Today)</div>
-      <div class="stat-value" id="estCost">₦0.00</div>
-      <div class="stat-unit">@ ₦225/kWh</div>
-    </div>
-  </div>
-
-  <!-- QUOTA BAR -->
-  <div class="quota-section">
-    <div class="quota-header">
-      <div>
-        <div class="quota-title">Energy Quota Status</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergyGuard — Smart Load Management</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">ENERGY<span>GUARD</span></div>
       </div>
-      <div class="quota-meta">
-        <div class="quota-meta-item">
-          <div class="quota-meta-label">Quota Remaining</div>
-          <div class="quota-meta-value" id="quotaRem">--</div>
+      <div class="header-right">
+        <span class="conn-tag connecting" id="connTag">◎ CONNECTING...</span>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>SYSTEM ONLINE</span>
         </div>
-        <div class="quota-meta-item">
-          <div class="quota-meta-label">Time Remaining</div>
-          <div class="quota-meta-value warn" id="timeRem">--</div>
+        <div class="live-clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- SHEDDING BANNER -->
+      <div class="shedding-banner" id="sheddingBanner">
+        <span class="shed-icon">⚠</span>
+        <span
+          >AUTOMATIC LOAD SHEDDING ACTIVE — CONSUMPTION RATE EXCEEDS SUSTAINABLE
+          THRESHOLD</span
+        >
+      </div>
+
+      <!-- TOP STATS -->
+      <div class="stats-row">
+        <div class="stat-card amber">
+          <div class="stat-label">Total Active Power</div>
+          <div class="stat-value" id="totalPower">--</div>
+          <div class="stat-unit">WATTS</div>
         </div>
-        <div class="quota-meta-item">
-          <div class="quota-meta-label">Sustainable Rate</div>
-          <div class="quota-meta-value" id="sustainRate">--</div>
+        <div class="stat-card green">
+          <div class="stat-label">Mains Voltage</div>
+          <div class="stat-value" id="mainVoltage">--</div>
+          <div class="stat-unit">VOLTS AC</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Energy Used Today</div>
+          <div class="stat-value" id="energyUsed">--</div>
+          <div class="stat-unit">kWh</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Est. Cost (Today)</div>
+          <div class="stat-value" id="estCost">--</div>
+          <div class="stat-unit">@ ₦225/kWh</div>
         </div>
       </div>
-    </div>
-    <div class="quota-bar-track">
-      <div class="quota-bar-fill" id="quotaBar" style="width: 100%"></div>
-    </div>
-    <div class="quota-ticks">
-      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-    </div>
-  </div>
 
-  <!-- MAIN GRID -->
-  <div class="main-grid">
-
-    <div style="display:flex;flex-direction:column;gap:16px;">
-      <!-- LOAD CHANNELS -->
-      <div class="channels-section">
-        <div class="section-header">
-          <span class="section-title">Load Channels</span>
-          <span class="section-badge" id="activeCount">3 ACTIVE</span>
-        </div>
-
-
-        <!-- Channel 2: HIGH -->
-        <div class="channel-row" id="ch1-row">
-          <div class="channel-left">
-            <div class="channel-indicator on" id="ch1-ind"></div>
-            <div>
-              <div class="channel-name">Lighting Circuit</div>
-              <span class="channel-priority high">HIGH</span>
-            </div>
-          </div>
+      <!-- QUOTA BAR -->
+      <div class="quota-section">
+        <div class="quota-header">
           <div>
-            <div class="channel-metrics">
-              <div class="metric">
-                <div class="metric-label">Voltage</div>
-                <div class="metric-val" id="ch1-v">220</div>
-                <div class="metric-unit">V</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Current</div>
-                <div class="metric-val" id="ch1-i">0.0</div>
-                <div class="metric-unit">A</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Power</div>
-                <div class="metric-val" id="ch1-p">0</div>
-                <div class="metric-unit">W</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-val" id="ch1-e">0.000</div>
-                <div class="metric-unit">kWh</div>
-              </div>
-            </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch1-bar" style="width:0%;background:var(--green)"></div></div>
+            <div class="quota-title">Energy Quota Status</div>
           </div>
-          <button class="toggle-btn active" id="ch1-btn" onclick="toggleChannel(1)">ON</button>
+          <div class="quota-meta">
+            <div class="quota-meta-item">
+              <div class="quota-meta-label">Quota Remaining</div>
+              <div class="quota-meta-value" id="quotaRem">--</div>
+            </div>
+            <div class="quota-meta-item">
+              <div class="quota-meta-label">Time Remaining</div>
+              <div class="quota-meta-value warn" id="timeRem">--</div>
+            </div>
+            <div class="quota-meta-item">
+              <div class="quota-meta-label">Sustainable Rate</div>
+              <div class="quota-meta-value" id="sustainRate">--</div>
+            </div>
+          </div>
         </div>
-
-        <!-- Channel 3: MEDIUM -->
-        <div class="channel-row" id="ch2-row">
-          <div class="channel-left">
-            <div class="channel-indicator on" id="ch2-ind"></div>
-            <div>
-              <div class="channel-name">Fan / TV</div>
-              <span class="channel-priority medium">MEDIUM</span>
-            </div>
-          </div>
-          <div>
-            <div class="channel-metrics">
-              <div class="metric">
-                <div class="metric-label">Voltage</div>
-                <div class="metric-val" id="ch2-v">220</div>
-                <div class="metric-unit">V</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Current</div>
-                <div class="metric-val" id="ch2-i">0.0</div>
-                <div class="metric-unit">A</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Power</div>
-                <div class="metric-val" id="ch2-p">0</div>
-                <div class="metric-unit">W</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-val" id="ch2-e">0.000</div>
-                <div class="metric-unit">kWh</div>
-              </div>
-            </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch2-bar" style="width:0%;background:var(--amber)"></div></div>
-          </div>
-          <button class="toggle-btn active" id="ch2-btn" onclick="toggleChannel(2)">ON</button>
+        <div class="quota-bar-track">
+          <div class="quota-bar-fill" id="quotaBar" style="width: 0%"></div>
         </div>
-
-        <!-- Channel 4: LOW -->
-        <div class="channel-row" id="ch3-row">
-          <div class="channel-left">
-            <div class="channel-indicator on" id="ch3-ind"></div>
-            <div>
-              <div class="channel-name">Air Conditioner</div>
-              <span class="channel-priority low">LOW</span>
-            </div>
-          </div>
-          <div>
-            <div class="channel-metrics">
-              <div class="metric">
-                <div class="metric-label">Voltage</div>
-                <div class="metric-val" id="ch3-v">220</div>
-                <div class="metric-unit">V</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Current</div>
-                <div class="metric-val" id="ch3-i">0.0</div>
-                <div class="metric-unit">A</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Power</div>
-                <div class="metric-val" id="ch3-p">0</div>
-                <div class="metric-unit">W</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Energy</div>
-                <div class="metric-val" id="ch3-e">0.000</div>
-                <div class="metric-unit">kWh</div>
-              </div>
-            </div>
-            <div class="power-bar"><div class="power-bar-fill" id="ch3-bar" style="width:0%;background:var(--blue)"></div></div>
-          </div>
-          <button class="toggle-btn active" id="ch3-btn" onclick="toggleChannel(3)">ON</button>
+        <div class="quota-ticks">
+          <span>0%</span><span>25%</span><span>50%</span><span>75%</span
+          ><span>100%</span>
         </div>
       </div>
 
-      <!-- POWER CHART -->
-      <div class="chart-section">
-        <div class="section-header">
-          <span class="section-title">Power Consumption History</span>
-          <span class="section-badge">LAST 60s</span>
-        </div>
-        <div class="chart-body">
-          <div class="chart-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Lighting</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Fan/TV</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>A/C</div>
-          </div>
-          <canvas id="powerChart" height="120"></canvas>
-        </div>
-      </div>
-    </div>
+      <!-- MAIN GRID -->
+      <div class="main-grid">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <!-- LOAD CHANNELS -->
+          <div class="channels-section">
+            <div class="section-header">
+              <span class="section-title">Load Channels</span>
+              <span class="section-badge" id="activeCount">--</span>
+            </div>
 
-    <!-- RIGHT PANEL -->
-    <div class="right-panel">
+            <!-- Channel 2: HIGH -->
+            <div class="channel-row" id="ch1-row">
+              <div class="channel-left">
+                <div class="channel-indicator on" id="ch1-ind"></div>
+                <div>
+                  <div class="channel-name">Lighting Circuit</div>
+                  <span class="channel-priority high">HIGH</span>
+                </div>
+              </div>
+              <div>
+                <div class="channel-metrics">
+                  <div class="metric">
+                    <div class="metric-label">Voltage</div>
+                    <div class="metric-val" id="ch1-v">--</div>
+                    <div class="metric-unit">V</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Current</div>
+                    <div class="metric-val" id="ch1-i">--</div>
+                    <div class="metric-unit">A</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Power</div>
+                    <div class="metric-val" id="ch1-p">--</div>
+                    <div class="metric-unit">W</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Energy</div>
+                    <div class="metric-val" id="ch1-e">--</div>
+                    <div class="metric-unit">kWh</div>
+                  </div>
+                </div>
+                <div class="power-bar">
+                  <div
+                    class="power-bar-fill"
+                    id="ch1-bar"
+                    style="width: 0%; background: var(--green)"
+                  ></div>
+                </div>
+              </div>
+              <button
+                class="toggle-btn active"
+                id="ch1-btn"
+                onclick="toggleChannel(1)"
+              >
+                ON
+              </button>
+            </div>
 
-      <!-- PREDICTION -->
-      <div class="prediction-card">
-        <div class="section-header">
-          <span class="section-title">Depletion Forecast</span>
-        </div>
-        <div class="pred-body">
-          <div class="pred-countdown" id="depletionTime">--h --m</div>
-          <div class="pred-sublabel">UNTIL QUOTA EXHAUSTED</div>
-          <div class="pred-row">
-            <span class="pred-key">Current Rate</span>
-            <span class="pred-val" id="currentRate">-- W</span>
-          </div>
-          <div class="pred-row">
-            <span class="pred-key">Sustainable Rate</span>
-            <span class="pred-val" id="sustainRate2">-- W</span>
-          </div>
-          <div class="pred-row">
-            <span class="pred-key">Quota Remaining</span>
-            <span class="pred-val" id="quotaRemKwh">-- kWh</span>
-          </div>
-          <div class="pred-row">
-            <span class="pred-key">Target Period</span>
-            <span class="pred-val" id="targetPeriod">--</span>
-          </div>
-          <div class="pred-row">
-            <span class="pred-key">Auto Shed Status</span>
-            <span class="pred-val" id="shedStatus">STANDBY</span>
-          </div>
-        </div>
-      </div>
+            <!-- Channel 3: MEDIUM -->
+            <div class="channel-row" id="ch2-row">
+              <div class="channel-left">
+                <div class="channel-indicator on" id="ch2-ind"></div>
+                <div>
+                  <div class="channel-name">Fan / TV</div>
+                  <span class="channel-priority medium">MEDIUM</span>
+                </div>
+              </div>
+              <div>
+                <div class="channel-metrics">
+                  <div class="metric">
+                    <div class="metric-label">Voltage</div>
+                    <div class="metric-val" id="ch2-v">--</div>
+                    <div class="metric-unit">V</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Current</div>
+                    <div class="metric-val" id="ch2-i">--</div>
+                    <div class="metric-unit">A</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Power</div>
+                    <div class="metric-val" id="ch2-p">--</div>
+                    <div class="metric-unit">W</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Energy</div>
+                    <div class="metric-val" id="ch2-e">--</div>
+                    <div class="metric-unit">kWh</div>
+                  </div>
+                </div>
+                <div class="power-bar">
+                  <div
+                    class="power-bar-fill"
+                    id="ch2-bar"
+                    style="width: 0%; background: var(--amber)"
+                  ></div>
+                </div>
+              </div>
+              <button
+                class="toggle-btn active"
+                id="ch2-btn"
+                onclick="toggleChannel(2)"
+              >
+                ON
+              </button>
+            </div>
 
-      <!-- SETTINGS -->
-      <div class="settings-card">
-        <div class="section-header">
-          <span class="section-title">Quota Settings</span>
-        </div>
-        <div class="settings-body">
-          <div class="setting-row">
-            <span class="setting-label">ENERGY QUOTA</span>
-            <div class="setting-control">
-              <input class="setting-input" id="quotaInput" type="number" value="5" min="0.1" step="0.1">
-              <span class="setting-unit">kWh</span>
+            <!-- Channel 4: LOW -->
+            <div class="channel-row" id="ch3-row">
+              <div class="channel-left">
+                <div class="channel-indicator on" id="ch3-ind"></div>
+                <div>
+                  <div class="channel-name">Air Conditioner</div>
+                  <span class="channel-priority low">LOW</span>
+                </div>
+              </div>
+              <div>
+                <div class="channel-metrics">
+                  <div class="metric">
+                    <div class="metric-label">Voltage</div>
+                    <div class="metric-val" id="ch3-v">--</div>
+                    <div class="metric-unit">V</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Current</div>
+                    <div class="metric-val" id="ch3-i">--</div>
+                    <div class="metric-unit">A</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Power</div>
+                    <div class="metric-val" id="ch3-p">--</div>
+                    <div class="metric-unit">W</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Energy</div>
+                    <div class="metric-val" id="ch3-e">--</div>
+                    <div class="metric-unit">kWh</div>
+                  </div>
+                </div>
+                <div class="power-bar">
+                  <div
+                    class="power-bar-fill"
+                    id="ch3-bar"
+                    style="width: 0%; background: var(--blue)"
+                  ></div>
+                </div>
+              </div>
+              <button
+                class="toggle-btn active"
+                id="ch3-btn"
+                onclick="toggleChannel(3)"
+              >
+                ON
+              </button>
             </div>
           </div>
-          <div class="setting-row">
-            <span class="setting-label">TARGET HOURS</span>
-            <div class="setting-control">
-              <input class="setting-input" id="hoursInput" type="number" value="24" min="1" step="1">
-              <span class="setting-unit">hrs</span>
+
+          <!-- POWER CHART -->
+          <div class="chart-section">
+            <div class="section-header">
+              <span class="section-title">Power Consumption History</span>
+              <span class="section-badge">LAST 60s</span>
+            </div>
+            <div class="chart-body">
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <div
+                    class="legend-dot"
+                    style="background: var(--green)"
+                  ></div>
+                  Lighting
+                </div>
+                <div class="legend-item">
+                  <div
+                    class="legend-dot"
+                    style="background: var(--amber)"
+                  ></div>
+                  Fan/TV
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--blue)"></div>
+                  A/C
+                </div>
+              </div>
+              <canvas id="powerChart" height="120"></canvas>
             </div>
           </div>
-          <div class="setting-row">
-            <span class="setting-label">AUTO SHED</span>
-            <div class="setting-control">
-              <button class="toggle-btn active" id="autoShedToggle" onclick="toggleAutoShed()" style="width:60px">ON</button>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+          <!-- PREDICTION -->
+          <div class="prediction-card">
+            <div class="section-header">
+              <span class="section-title">Depletion Forecast</span>
+            </div>
+            <div class="pred-body">
+              <div class="pred-countdown" id="depletionTime">--h --m</div>
+              <div class="pred-sublabel">UNTIL QUOTA EXHAUSTED</div>
+              <div class="pred-row">
+                <span class="pred-key">Current Rate</span>
+                <span class="pred-val" id="currentRate">-- W</span>
+              </div>
+              <div class="pred-row">
+                <span class="pred-key">Sustainable Rate</span>
+                <span class="pred-val" id="sustainRate2">-- W</span>
+              </div>
+              <div class="pred-row">
+                <span class="pred-key">Quota Remaining</span>
+                <span class="pred-val" id="quotaRemKwh">-- kWh</span>
+              </div>
+              <div class="pred-row">
+                <span class="pred-key">Target Period</span>
+                <span class="pred-val" id="targetPeriod">--</span>
+              </div>
+              <div class="pred-row">
+                <span class="pred-key">Auto Shed Status</span>
+                <span class="pred-val" id="shedStatus">STANDBY</span>
+              </div>
             </div>
           </div>
-          <button class="apply-btn" onclick="applySettings()">▶ APPLY SETTINGS</button>
-          <button class="apply-btn" onclick="resetEnergy()" style="margin-top:6px;background:var(--red-dim);border-color:var(--red);color:var(--red);">↺ RESET ENERGY COUNTER</button>
-        </div>
-      </div>
 
-      <!-- ALERTS -->
-      <div class="alerts-card">
-        <div class="section-header">
-          <span class="section-title">Alert Log</span>
-          <button onclick="clearAlerts()" style="background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-size:9px;cursor:pointer;letter-spacing:1px;">CLEAR</button>
-        </div>
-        <div class="alert-log" id="alertLog">
-          <div class="alert-item">
-            <span class="alert-time" id="initTime">--:--</span>
-            <div class="alert-dot info"></div>
-            <span class="alert-msg">System initialised. Simulation mode active.</span>
+          <!-- SETTINGS -->
+          <div class="settings-card">
+            <div class="section-header">
+              <span class="section-title">Quota Settings</span>
+            </div>
+            <div class="settings-body">
+              <div class="setting-row">
+                <span class="setting-label">ENERGY QUOTA</span>
+                <div class="setting-control">
+                  <input
+                    class="setting-input"
+                    id="quotaInput"
+                    type="number"
+                    value="5"
+                    min="0.1"
+                    step="0.1"
+                  />
+                  <span class="setting-unit">kWh</span>
+                </div>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label">TARGET HOURS</span>
+                <div class="setting-control">
+                  <input
+                    class="setting-input"
+                    id="hoursInput"
+                    type="number"
+                    value="24"
+                    min="1"
+                    step="1"
+                  />
+                  <span class="setting-unit">hrs</span>
+                </div>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label">AUTO SHED</span>
+                <div class="setting-control">
+                  <button
+                    class="toggle-btn active"
+                    id="autoShedToggle"
+                    onclick="toggleAutoShed()"
+                    style="width: 60px"
+                  >
+                    ON
+                  </button>
+                </div>
+              </div>
+              <button class="apply-btn" onclick="applySettings()">
+                ▶ APPLY SETTINGS
+              </button>
+              <button
+                class="apply-btn"
+                onclick="resetEnergy()"
+                style="
+                  margin-top: 6px;
+                  background: var(--red-dim);
+                  border-color: var(--red);
+                  color: var(--red);
+                "
+              >
+                ↺ RESET ENERGY COUNTER
+              </button>
+            </div>
+          </div>
+
+          <!-- ALERTS -->
+          <div class="alerts-card">
+            <div class="section-header">
+              <span class="section-title">Alert Log</span>
+              <button
+                onclick="clearAlerts()"
+                style="
+                  background: none;
+                  border: none;
+                  color: var(--text-dim);
+                  font-family: var(--mono);
+                  font-size: 9px;
+                  cursor: pointer;
+                  letter-spacing: 1px;
+                "
+              >
+                CLEAR
+              </button>
+            </div>
+            <div class="alert-log" id="alertLog">
+              <div class="alert-item">
+                <span class="alert-time" id="initTime">--:--</span>
+                <div class="alert-dot info"></div>
+                <span class="alert-msg"
+                  >System initialised. Waiting for device data...</span
+                >
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </main>
 
-    </div>
-  </div>
-</main>
+    <script>
+      // ═══════════════════════════════════════════════════════════════════════════════
+      // CONFIG — change SERVER_HOST to your PC's local IP when running the backend
+      // ═══════════════════════════════════════════════════════════════════════════════
+      const SERVER_HOST = "energyguard-backend-bksm.onrender.com";
+      const WS_URL = `wss://${SERVER_HOST}/api/data/ws`;
+      const API_URL = `https://${SERVER_HOST}`;
 
-<script>
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIG — change SERVER_HOST to your PC's local IP when running the backend
-// ═══════════════════════════════════════════════════════════════════════════════
-const SERVER_HOST = 'energyguard-backend-bksm.onrender.com';
-const WS_URL      = `wss://${SERVER_HOST}/api/data/ws`;
-const API_URL     = `https://${SERVER_HOST}`;
+      // ─── CONSTANTS ────────────────────────────────────────────────────────────────
+      const TARIFF = 225;
+      const MAX_LOAD = 1800;
+      const CHART_POINTS = 60;
+      // The firmware reports exactly the three metered channels (NUM_CHANNELS = 3),
+      // so frontend index == payload index. CH_MAP is kept as an explicit identity
+      // map rather than deleted: it documents the contract, and it is the one place
+      // to change if the channel order in the firmware ever moves.
+      const CH_MAP = [0, 1, 2];
+      const CHANNEL_NAMES = ["Lighting", "Fan/TV", "Air Conditioner"];
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const TARIFF      = 225;
-const MAX_LOAD    = 1800;
-const CHART_POINTS = 60;
-// Frontend models only the three metered channels. CH_MAP maps each
-// frontend index -> its index in the ESP32/backend payload (d.ch[...]),
-// which still reports 4 entries (index 0 = unmetered Medical/Fridge).
-// If you later set NUM_CHANNELS = 3 in the firmware, change CH_MAP to [0, 1, 2].
-const CH_MAP        = [1, 2, 3];
-const BASE_LOADS    = [60, 180, 1500];        // sim fallback (Lighting, Fan/TV, A/C)
-const CHANNEL_NAMES = ['Lighting', 'Fan/TV', 'Air Conditioner'];
+      // ─── STATE ────────────────────────────────────────────────────────────────────
+      let channels = [
+        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // Lighting  (HIGH)
+        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // Fan/TV    (MEDIUM)
+        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // A/C       (LOW)
+      ];
+      let voltage = 220;
+      let quotaKwh = 5;
+      let targetHours = 24;
+      let energyUsedTotal = 0;
+      let autoShed = true;
+      let isShedding = false;
+      let isLiveMode = false; // true when WebSocket is connected & receiving
+      let isConnecting = true; // WS handshake in progress — not yet offline
+      let connectTimeout = null; // fires if backend doesn't respond in time
+      // ── Optimistic-toggle reconciliation ─────────────────────────────────────────
+      // When the user flips a switch we record the desired on-state and keep showing
+      // it until the ESP32 confirms *that exact state* (see applyLiveData). This
+      // survives the multi-second command round-trip (backend queue -> ESP32 poll ~1s
+      // -> relay -> next sensor POST ~2s -> WS) without ever adopting a stale frame.
+      //   desired[i] === null  ->  not awaiting confirmation; device is authoritative.
+      const desired = [null, null, null]; // last commanded on-state, per channel
+      const cmdTime = [0, 0, 0]; // ms timestamp the command was sent
+      const CONFIRM_TIMEOUT = 10000; // give up waiting after 10s, then trust device
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let channels = [
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // Lighting  (HIGH)
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // Fan/TV    (MEDIUM)
-  { on: true, power: 0, current: 0, energy: 0, shedding: false },  // A/C       (LOW)
-];
-let voltage        = 220;
-let quotaKwh       = 5;
-let targetHours    = 24;
-let energyUsedTotal = 0;
-let autoShed       = true;
-let isShedding     = false;
-let isLiveMode     = false;    // true when WebSocket is connected & receiving
-let isConnecting   = true;     // pauses sim while WS handshake is in progress
-let connectTimeout = null;     // fires if backend doesn't respond in time
-// ── Optimistic-toggle reconciliation ─────────────────────────────────────────
-// When the user flips a switch we record the desired on-state and keep showing
-// it until the ESP32 confirms *that exact state* (see applyLiveData). This
-// survives the multi-second command round-trip (backend queue -> ESP32 poll ~1s
-// -> relay -> next sensor POST ~2s -> WS) without ever adopting a stale frame.
-//   desired[i] === null  ->  not awaiting confirmation; device is authoritative.
-const desired = [null, null, null];   // last commanded on-state, per channel
-const cmdTime = [0, 0, 0];            // ms timestamp the command was sent
-const CONFIRM_TIMEOUT = 10000;        // give up waiting after 10s, then trust device
+      const chartData = {
+        ch1: new Array(CHART_POINTS).fill(0), // Lighting
+        ch2: new Array(CHART_POINTS).fill(0), // Fan/TV
+        ch3: new Array(CHART_POINTS).fill(0), // A/C
+      };
 
-const chartData = {
-  ch1: new Array(CHART_POINTS).fill(0),  // Lighting
-  ch2: new Array(CHART_POINTS).fill(0),  // Fan/TV
-  ch3: new Array(CHART_POINTS).fill(0),  // A/C
-};
+      // ─── CLOCK ────────────────────────────────────────────────────────────────────
+      function updateClock() {
+        const now = new Date();
+        const clockEl = document.getElementById("clock");
+        const initEl = document.getElementById("initTime");
+        if (clockEl) clockEl.textContent = now.toLocaleTimeString("en-GB");
+        if (initEl)
+          initEl.textContent = now.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-// ─── CLOCK ────────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const clockEl = document.getElementById('clock');
-  const initEl  = document.getElementById('initTime');
-  if (clockEl) clockEl.textContent = now.toLocaleTimeString('en-GB');
-  if (initEl)  initEl.textContent  =
-    now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ─── CONNECTION TAG ───────────────────────────────────────────────────────────
-function setConnTag(state, label) {
-  const el = document.getElementById('connTag');
-  el.className = 'conn-tag ' + state;
-  el.textContent = label;
-}
-
-// ─── WEBSOCKET ────────────────────────────────────────────────────────────────
-let ws = null;
-let wsReconnectTimer = null;
-let wsMissedBeats = 0;
-
-function connectWebSocket() {
-  isConnecting = true;
-  setConnTag('connecting', '◎ CONNECTING...');
-  ws = new WebSocket(WS_URL);
-
-  // If backend doesn't respond within 15s (e.g. Render cold-start), fall back to sim
-  connectTimeout = setTimeout(() => {
-    if (isConnecting && !isLiveMode) {
-      isConnecting = false;
-      setConnTag('sim', '◉ SIMULATION');
-      addAlert('warn', 'Backend not reachable. Running simulation mode.');
-    }
-  }, 15000);
-
-  ws.onopen = () => {
-    clearTimeout(connectTimeout);
-    isConnecting = false;
-    isLiveMode = true;
-    wsMissedBeats = 0;
-    setConnTag('live', '● LIVE');
-    addAlert('info', 'WebSocket connected — receiving live data from ESP32.');
-    // Backfill chart with history
-    fetchHistory();
-  };
-
-  ws.onmessage = (event) => {
-    wsMissedBeats = 0;
-    try {
-      const d = JSON.parse(event.data);
-      applyLiveData(d);
-    } catch(e) {
-      console.warn('WS parse error:', e);
-    }
-  };
-
-  ws.onclose = () => {
-    clearTimeout(connectTimeout);
-    isConnecting = false;
-    isLiveMode = false;
-    setConnTag('lost', '○ DISCONNECTED');
-    addAlert('warn', 'Connection lost. Falling back to simulation. Retrying in 5s...');
-    // Retry after 5 seconds
-    wsReconnectTimer = setTimeout(connectWebSocket, 5000);
-  };
-
-  ws.onerror = () => {
-    // onclose will fire after onerror — no duplicate handling needed
-    ws.close();
-  };
-}
-
-// ─── APPLY LIVE DATA FROM ESP32 ──────────────────────────────────────────────
-// Maps the ESP32 JSON payload (short keys) onto our state and renders.
-function applyLiveData(d) {
-  voltage        = d.v   ?? voltage;
-  energyUsedTotal = d.te  ?? energyUsedTotal;
-
-  if (d.ch) {
-    CH_MAP.forEach((p, i) => {
-      const c = d.ch[p];
-      if (!c) return;                 // payload missing this channel — skip
-      const reportedOn = c.on === 1;
-
-      // ── On/off reconciliation — the ESP32 relay is the source of truth ──
-      if (desired[i] === null) {
-        // Not awaiting confirmation: accept the device state. This also lets
-        // externally-driven changes (auto-shed, LCD, another client) show up.
-        channels[i].on       = reportedOn;
-        channels[i].shedding = c.shed === 1;
-      } else if (reportedOn === desired[i]) {
-        // Device confirmed our command — adopt it and stop tracking.
-        channels[i].on       = reportedOn;
-        channels[i].shedding = c.shed === 1;
-        desired[i] = null;
-      } else if (Date.now() - cmdTime[i] > CONFIRM_TIMEOUT) {
-        // Never confirmed within the round-trip budget: trust the device and
-        // surface the mismatch so the switch never silently lies to the user.
-        channels[i].on       = reportedOn;
-        channels[i].shedding = c.shed === 1;
-        addAlert('warn', CHANNEL_NAMES[i] + ' did not confirm — showing actual state (' + (reportedOn ? 'ON' : 'OFF') + ')');
-        desired[i] = null;
-      } else {
-        // Command still in flight and this frame is stale — keep the user's
-        // intent on screen; do NOT overwrite it with the old device state.
-        channels[i].on       = desired[i];
-        channels[i].shedding = false;
+      // ─── CONNECTION TAG ───────────────────────────────────────────────────────────
+      function setConnTag(state, label) {
+        const el = document.getElementById("connTag");
+        el.className = "conn-tag " + state;
+        el.textContent = label;
       }
 
-      channels[i].current  = c.i   ?? 0;
-      channels[i].power    = c.p   ?? 0;
-      channels[i].energy   = c.e   ?? channels[i].energy;
-    });
-  }
+      // ─── WEBSOCKET ────────────────────────────────────────────────────────────────
+      let ws = null;
+      let wsReconnectTimer = null;
+      let wsMissedBeats = 0;
 
-  // Shedding banner — driven by ESP32 state, not recalculated here
-  const shed = d.shed === 1;
-  document.getElementById('sheddingBanner').classList.toggle('visible', shed);
-  isShedding = shed;
+      function connectWebSocket() {
+        isConnecting = true;
+        setConnTag("connecting", "◎ CONNECTING...");
+        ws = new WebSocket(WS_URL);
 
-  // Update chart
-  chartData.ch1.push(channels[0].power); chartData.ch1.shift();
-  chartData.ch2.push(channels[1].power); chartData.ch2.shift();
-  chartData.ch3.push(channels[2].power); chartData.ch3.shift();
+        // If backend doesn't respond within 15s (e.g. Render cold-start), declare
+        // the dashboard offline. We do NOT invent data to fill the gap.
+        connectTimeout = setTimeout(() => {
+          if (isConnecting && !isLiveMode) {
+            isConnecting = false;
+            setConnTag("lost", "○ OFFLINE — NO DEVICE DATA");
+            addAlert("warn", "Backend not reachable. No data to display.");
+            renderOffline();
+          }
+        }, 15000);
 
-  // Render with live prediction values from ESP32
-  renderLive(d);
-  drawChart();
-}
+        ws.onopen = () => {
+          clearTimeout(connectTimeout);
+          isConnecting = false;
+          isLiveMode = true;
+          wsMissedBeats = 0;
+          setConnTag("live", "● LIVE");
+          addAlert(
+            "info",
+            "WebSocket connected — receiving live data from ESP32.",
+          );
+          // Backfill chart with history
+          fetchHistory();
+        };
 
-// ─── RENDER (LIVE MODE) ───────────────────────────────────────────────────────
-// Uses prediction values sent directly from the ESP32 / backend.
-function renderLive(d) {
-  const totalPower = channels.reduce((s, c) => s + c.power, 0);
-  const cost       = energyUsedTotal * TARIFF;
-  const qr         = d.qr  ?? 0;
-  const sr         = d.sr  ?? 0;
-  const eta        = d.eta ?? 9999;
-  const pct        = (qr / quotaKwh) * 100;
+        ws.onmessage = (event) => {
+          wsMissedBeats = 0;
+          try {
+            const d = JSON.parse(event.data);
+            applyLiveData(d);
+          } catch (e) {
+            console.warn("WS parse error:", e);
+          }
+        };
 
-  document.getElementById('totalPower').textContent  = totalPower.toFixed(1);
-  document.getElementById('mainVoltage').textContent = voltage.toFixed(0);
-  document.getElementById('energyUsed').textContent  = energyUsedTotal.toFixed(3);
-  document.getElementById('estCost').textContent     = '₦' + cost.toFixed(2);
+        ws.onclose = () => {
+          clearTimeout(connectTimeout);
+          isConnecting = false;
+          isLiveMode = false;
+          setConnTag("lost", "○ OFFLINE — NO DEVICE DATA");
+          addAlert("warn", "Connection lost. Retrying in 5s...");
+          // Blank the readings. Leaving the last live frame on screen would let a
+          // stale number pass for a current one indefinitely.
+          renderOffline();
+          // Retry after 5 seconds
+          wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+        };
 
-  // Quota bar
-  const bar = document.getElementById('quotaBar');
-  bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
-  bar.className   = 'quota-bar-fill' + (pct < 20 ? ' crit' : pct < 40 ? ' warn' : '');
+        ws.onerror = () => {
+          // onclose will fire after onerror — no duplicate handling needed
+          ws.close();
+        };
+      }
 
-  // Prediction panel
-  const hLeft = eta > 999 ? null : Math.floor(eta);
-  const mLeft = eta > 999 ? null : Math.floor((eta - Math.floor(eta)) * 60);
-  const depEl = document.getElementById('depletionTime');
-  if (eta > 999) {
-    depEl.textContent = '∞ hrs';
-    depEl.className   = 'pred-countdown safe';
-  } else {
-    depEl.textContent = hLeft + 'h ' + mLeft + 'm';
-    depEl.className   = 'pred-countdown' + (eta < 2 ? ' crit' : eta < targetHours ? ' warn' : ' safe');
-  }
+      // ─── APPLY LIVE DATA FROM ESP32 ──────────────────────────────────────────────
+      // Maps the ESP32 JSON payload (short keys) onto our state and renders.
+      function applyLiveData(d) {
+        voltage = d.v ?? voltage;
+        energyUsedTotal = d.te ?? energyUsedTotal;
 
-  document.getElementById('currentRate').textContent   = totalPower.toFixed(0) + ' W';
-  document.getElementById('sustainRate').textContent   = sr.toFixed(0) + ' W';
-  document.getElementById('sustainRate2').textContent  = sr.toFixed(0) + ' W';
-  document.getElementById('quotaRem').textContent      = qr.toFixed(3) + ' kWh';
-  document.getElementById('quotaRemKwh').textContent   = qr.toFixed(3) + ' kWh';
-  document.getElementById('timeRem').textContent       = eta > 999 ? '∞' : hLeft + 'h ' + mLeft + 'm';
-  document.getElementById('targetPeriod').textContent  = targetHours + ' hours';
+        if (d.ch) {
+          CH_MAP.forEach((p, i) => {
+            const c = d.ch[p];
+            if (!c) return; // payload missing this channel — skip
+            const reportedOn = c.on === 1;
 
-  // Shed status
-  const shedEl = document.getElementById('shedStatus');
-  if (d.auto === 0) {
-    shedEl.textContent = 'DISABLED'; shedEl.style.color = 'var(--text-dim)';
-  } else if (d.shed === 1) {
-    shedEl.textContent = 'ACTIVE ⚠'; shedEl.style.color = 'var(--red)';
-  } else {
-    shedEl.textContent = 'STANDBY';  shedEl.style.color = 'var(--green)';
-  }
+            // ── On/off reconciliation — the ESP32 relay is the source of truth ──
+            if (desired[i] === null) {
+              // Not awaiting confirmation: accept the device state. This also lets
+              // externally-driven changes (auto-shed, LCD, another client) show up.
+              channels[i].on = reportedOn;
+              channels[i].shedding = c.shed === 1;
+            } else if (reportedOn === desired[i]) {
+              // Device confirmed our command — adopt it and stop tracking.
+              channels[i].on = reportedOn;
+              channels[i].shedding = c.shed === 1;
+              desired[i] = null;
+            } else if (Date.now() - cmdTime[i] > CONFIRM_TIMEOUT) {
+              // Never confirmed within the round-trip budget: trust the device and
+              // surface the mismatch so the switch never silently lies to the user.
+              channels[i].on = reportedOn;
+              channels[i].shedding = c.shed === 1;
+              addAlert(
+                "warn",
+                CHANNEL_NAMES[i] +
+                  " did not confirm — showing actual state (" +
+                  (reportedOn ? "ON" : "OFF") +
+                  ")",
+              );
+              desired[i] = null;
+            } else {
+              // Command still in flight and this frame is stale — keep the user's
+              // intent on screen; do NOT overwrite it with the old device state.
+              channels[i].on = desired[i];
+              channels[i].shedding = false;
+            }
 
-  renderChannels();
-}
+            channels[i].current = c.i ?? 0;
+            channels[i].power = c.p ?? 0;
+            channels[i].energy = c.e ?? channels[i].energy;
+          });
+        }
 
-// ─── SHARED CHANNEL RENDERER ──────────────────────────────────────────────────
-function renderChannels() {
-  let activeCount = 0;
-  channels.forEach((ch, i) => {
-    const n = i + 1;
-    // Skip channels whose HTML is not present. Belt-and-suspenders: without
-    // this, getElementById returns null and setting .textContent throws,
-    // halting the render for every channel below it.
-    const row = document.getElementById('ch' + n + '-row');
-    if (!row) return;
-    if (ch.on) activeCount++;
-    document.getElementById('ch' + n + '-v').textContent = ch.on ? voltage.toFixed(0) : '0';
-    document.getElementById('ch' + n + '-i').textContent = ch.current.toFixed(2);
-    document.getElementById('ch' + n + '-p').textContent = ch.power.toFixed(0);
-    document.getElementById('ch' + n + '-e').textContent = ch.energy.toFixed(3);
-    const barPct = (ch.power / MAX_LOAD) * 100;
-    document.getElementById('ch' + n + '-bar').style.width = barPct + '%';
-    document.getElementById('ch' + n + '-ind').className =
-      'channel-indicator ' + (ch.shedding ? 'shed' : ch.on ? 'on' : 'off');
-    row.className = 'channel-row' + (ch.on ? '' : ' off');
-    // Sync button state (live mode — ESP32 is authoritative)
-    if (isLiveMode) {
-      const btn = document.getElementById('ch' + n + '-btn');
-      if (btn) {
-        if (ch.shedding) {
-          btn.textContent = 'SHED'; btn.className = 'toggle-btn';
+        // Shedding banner — driven by ESP32 state, not recalculated here
+        const shed = d.shed === 1;
+        document
+          .getElementById("sheddingBanner")
+          .classList.toggle("visible", shed);
+        isShedding = shed;
+
+        // Update chart
+        chartData.ch1.push(channels[0].power);
+        chartData.ch1.shift();
+        chartData.ch2.push(channels[1].power);
+        chartData.ch2.shift();
+        chartData.ch3.push(channels[2].power);
+        chartData.ch3.shift();
+
+        // Render with live prediction values from ESP32
+        renderLive(d);
+        drawChart();
+      }
+
+      // ─── RENDER (LIVE MODE) ───────────────────────────────────────────────────────
+      // Uses prediction values sent directly from the ESP32 / backend.
+      function renderLive(d) {
+        const totalPower = channels.reduce((s, c) => s + c.power, 0);
+        const cost = energyUsedTotal * TARIFF;
+        const qr = d.qr ?? 0;
+        const sr = d.sr ?? 0;
+        const eta = d.eta ?? 9999;
+        const pct = (qr / quotaKwh) * 100;
+
+        document.getElementById("totalPower").textContent =
+          totalPower.toFixed(1);
+        document.getElementById("mainVoltage").textContent = voltage.toFixed(0);
+        document.getElementById("energyUsed").textContent =
+          energyUsedTotal.toFixed(3);
+        document.getElementById("estCost").textContent = "₦" + cost.toFixed(2);
+
+        // Quota bar
+        const bar = document.getElementById("quotaBar");
+        bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+        bar.className =
+          "quota-bar-fill" + (pct < 20 ? " crit" : pct < 40 ? " warn" : "");
+
+        // Prediction panel
+        const hLeft = eta > 999 ? null : Math.floor(eta);
+        const mLeft =
+          eta > 999 ? null : Math.floor((eta - Math.floor(eta)) * 60);
+        const depEl = document.getElementById("depletionTime");
+        if (eta > 999) {
+          depEl.textContent = "∞ hrs";
+          depEl.className = "pred-countdown safe";
         } else {
-          btn.textContent = ch.on ? 'ON' : 'OFF';
-          btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+          depEl.textContent = hLeft + "h " + mLeft + "m";
+          depEl.className =
+            "pred-countdown" +
+            (eta < 2 ? " crit" : eta < targetHours ? " warn" : " safe");
+        }
+
+        document.getElementById("currentRate").textContent =
+          totalPower.toFixed(0) + " W";
+        document.getElementById("sustainRate").textContent =
+          sr.toFixed(0) + " W";
+        document.getElementById("sustainRate2").textContent =
+          sr.toFixed(0) + " W";
+        document.getElementById("quotaRem").textContent =
+          qr.toFixed(3) + " kWh";
+        document.getElementById("quotaRemKwh").textContent =
+          qr.toFixed(3) + " kWh";
+        document.getElementById("timeRem").textContent =
+          eta > 999 ? "∞" : hLeft + "h " + mLeft + "m";
+        document.getElementById("targetPeriod").textContent =
+          targetHours + " hours";
+
+        // Shed status
+        const shedEl = document.getElementById("shedStatus");
+        if (d.auto === 0) {
+          shedEl.textContent = "DISABLED";
+          shedEl.style.color = "var(--text-dim)";
+        } else if (d.shed === 1) {
+          shedEl.textContent = "ACTIVE ⚠";
+          shedEl.style.color = "var(--red)";
+        } else {
+          shedEl.textContent = "STANDBY";
+          shedEl.style.color = "var(--green)";
+        }
+
+        renderChannels();
+      }
+
+      // ─── SHARED CHANNEL RENDERER ──────────────────────────────────────────────────
+      function renderChannels() {
+        let activeCount = 0;
+        channels.forEach((ch, i) => {
+          const n = i + 1;
+          // Skip channels whose HTML is not present. Belt-and-suspenders: without
+          // this, getElementById returns null and setting .textContent throws,
+          // halting the render for every channel below it.
+          const row = document.getElementById("ch" + n + "-row");
+          if (!row) return;
+          if (ch.on) activeCount++;
+          document.getElementById("ch" + n + "-v").textContent = ch.on
+            ? voltage.toFixed(0)
+            : "0";
+          document.getElementById("ch" + n + "-i").textContent =
+            ch.current.toFixed(2);
+          document.getElementById("ch" + n + "-p").textContent =
+            ch.power.toFixed(0);
+          document.getElementById("ch" + n + "-e").textContent =
+            ch.energy.toFixed(3);
+          const barPct = (ch.power / MAX_LOAD) * 100;
+          document.getElementById("ch" + n + "-bar").style.width = barPct + "%";
+          document.getElementById("ch" + n + "-ind").className =
+            "channel-indicator " +
+            (ch.shedding ? "shed" : ch.on ? "on" : "off");
+          row.className = "channel-row" + (ch.on ? "" : " off");
+          // Sync button state (live mode — ESP32 is authoritative)
+          if (isLiveMode) {
+            const btn = document.getElementById("ch" + n + "-btn");
+            if (btn) {
+              if (ch.shedding) {
+                btn.textContent = "SHED";
+                btn.className = "toggle-btn";
+              } else {
+                btn.textContent = ch.on ? "ON" : "OFF";
+                btn.className = "toggle-btn" + (ch.on ? " active" : "");
+              }
+            }
+          }
+        });
+        document.getElementById("activeCount").textContent =
+          activeCount + " ACTIVE";
+      }
+
+      // ─── CHART BACKFILL FROM HISTORY ──────────────────────────────────────────────
+      async function fetchHistory() {
+        try {
+          const res = await fetch(
+            `${API_URL}/api/data/history?limit=${CHART_POINTS}`,
+          );
+          const json = await res.json();
+          if (!json.readings) return;
+          const readings = json.readings.slice(-CHART_POINTS);
+
+          // Pad-left. The chart draws index 0 at the left edge (oldest) and
+          // CHART_POINTS-1 at the right (newest), so writing history from index 0
+          // forward would park the real data on the left and leave whatever was
+          // already in the array occupying the *newest*-looking slots. Zeroing and
+          // right-aligning means the only thing to the left of real data is a
+          // truthful flat line for the period we have no readings for.
+          const pad = CHART_POINTS - readings.length;
+          chartData.ch1 = new Array(CHART_POINTS).fill(0);
+          chartData.ch2 = new Array(CHART_POINTS).fill(0);
+          chartData.ch3 = new Array(CHART_POINTS).fill(0);
+          readings.forEach((r, idx) => {
+            if (!r.ch) return;
+            chartData.ch1[pad + idx] = r.ch[CH_MAP[0]]?.p ?? 0;
+            chartData.ch2[pad + idx] = r.ch[CH_MAP[1]]?.p ?? 0;
+            chartData.ch3[pad + idx] = r.ch[CH_MAP[2]]?.p ?? 0;
+          });
+          drawChart();
+        } catch (e) {
+          console.log(
+            "History fetch failed (backend not running yet):",
+            e.message,
+          );
         }
       }
-    }
-  });
-  document.getElementById('activeCount').textContent = activeCount + ' ACTIVE';
-}
 
-// ─── CHART BACKFILL FROM HISTORY ──────────────────────────────────────────────
-async function fetchHistory() {
-  try {
-    const res  = await fetch(`${API_URL}/api/data/history?limit=${CHART_POINTS}`);
-    const json = await res.json();
-    if (!json.readings) return;
-    // Fill chart arrays from oldest to newest
-    const readings = json.readings.slice(-CHART_POINTS);
-    readings.forEach((r, idx) => {
-      if (r.ch) {
-        chartData.ch1[idx] = r.ch[CH_MAP[0]]?.p ?? 0;
-        chartData.ch2[idx] = r.ch[CH_MAP[1]]?.p ?? 0;
-        chartData.ch3[idx] = r.ch[CH_MAP[2]]?.p ?? 0;
+      // ─── OFFLINE RENDER ──────────────────────────────────────────────────────────
+      // There is no simulation fallback by design. When the device or backend is
+      // unreachable the dashboard shows nothing rather than something plausible:
+      // a fabricated reading is indistinguishable from a real one on screen, and
+      // the entire premise of consumption feedback is that the feedback is true.
+      function renderOffline() {
+        const dash = (id, text) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = text;
+        };
+
+        // Local state back to "unknown" so a later live frame can't be blended
+        // with leftovers from before the outage.
+        voltage = 0;
+        energyUsedTotal = 0;
+        channels.forEach((ch) => {
+          ch.power = 0;
+          ch.current = 0;
+          ch.shedding = false;
+        });
+
+        dash("totalPower", "--");
+        dash("mainVoltage", "--");
+        dash("energyUsed", "--");
+        dash("estCost", "--");
+        dash("quotaRem", "--");
+        dash("timeRem", "--");
+        dash("sustainRate", "--");
+        dash("currentRate", "--");
+        dash("sustainRate2", "--");
+        dash("quotaRemKwh", "--");
+        dash("targetPeriod", "--");
+        dash("activeCount", "--");
+
+        const depEl = document.getElementById("depletionTime");
+        if (depEl) {
+          depEl.textContent = "--h --m";
+          depEl.className = "pred-countdown";
+        }
+
+        const shedEl = document.getElementById("shedStatus");
+        if (shedEl) {
+          shedEl.textContent = "--";
+          shedEl.style.color = "var(--text-dim)";
+        }
+
+        const bar = document.getElementById("quotaBar");
+        if (bar) {
+          bar.style.width = "0%";
+          bar.className = "quota-bar-fill";
+        }
+
+        // The shedding banner reports a physical event. With no link to the device
+        // we cannot know whether shedding is happening, so we must not assert it.
+        const banner = document.getElementById("sheddingBanner");
+        if (banner) banner.classList.remove("visible");
+        isShedding = false;
+
+        // Per-channel rows
+        for (let n = 1; n <= 3; n++) {
+          dash("ch" + n + "-v", "--");
+          dash("ch" + n + "-i", "--");
+          dash("ch" + n + "-p", "--");
+          dash("ch" + n + "-e", "--");
+          const chBar = document.getElementById("ch" + n + "-bar");
+          if (chBar) chBar.style.width = "0%";
+          const ind = document.getElementById("ch" + n + "-ind");
+          if (ind) ind.className = "channel-indicator off";
+          const btn = document.getElementById("ch" + n + "-btn");
+          if (btn) {
+            btn.textContent = "--";
+            btn.className = "toggle-btn";
+          }
+        }
+
+        // Freeze and clear the chart — an outage is a gap, not a flat zero load,
+        // but zero is the honest thing to draw when we are asserting nothing.
+        chartData.ch1 = new Array(CHART_POINTS).fill(0);
+        chartData.ch2 = new Array(CHART_POINTS).fill(0);
+        chartData.ch3 = new Array(CHART_POINTS).fill(0);
+        drawChart();
       }
-    });
-    drawChart();
-  } catch(e) {
-    console.log('History fetch failed (backend not running yet):', e.message);
-  }
-}
 
-// ─── SIMULATION FALLBACK ──────────────────────────────────────────────────────
-// Runs only when WebSocket is not connected.
-function simulateSensors() {
-  voltage = 220 + (Math.random() - 0.5) * 10;
-  channels.forEach((ch, i) => {
-    if (!ch.on) { ch.power = 0; ch.current = 0; return; }
-    const noise = 1 + (Math.random() - 0.5) * 0.12;
-    ch.power   = BASE_LOADS[i] * noise;
-    ch.current = ch.power / voltage;
-    ch.energy += (ch.power / 3600) / 1000;
-  });
-  energyUsedTotal = channels.reduce((s, c) => s + c.energy, 0);
-}
+      // ─── CHART ────────────────────────────────────────────────────────────────────
+      const canvas = document.getElementById("powerChart");
+      const ctx = canvas.getContext("2d");
 
-function renderSimulated() {
-  const totalPower = channels.reduce((s, c) => s + c.power, 0);
-  const cost       = energyUsedTotal * TARIFF;
-  const remaining  = Math.max(0, quotaKwh - energyUsedTotal);
-  const pct        = (remaining / quotaKwh) * 100;
-  const sustainableW = (remaining * 1000) / targetHours;
-  const hoursLeft  = totalPower > 0 ? (remaining / (totalPower / 1000)) : Infinity;
-  const hLeft = Math.floor(hoursLeft);
-  const mLeft = Math.floor((hoursLeft - hLeft) * 60);
-
-  document.getElementById('totalPower').textContent  = totalPower.toFixed(1);
-  document.getElementById('mainVoltage').textContent = voltage.toFixed(0);
-  document.getElementById('energyUsed').textContent  = energyUsedTotal.toFixed(3);
-  document.getElementById('estCost').textContent     = '₦' + cost.toFixed(2);
-
-  const bar = document.getElementById('quotaBar');
-  bar.style.width = pct + '%';
-  bar.className   = 'quota-bar-fill' + (pct < 20 ? ' crit' : pct < 40 ? ' warn' : '');
-
-  const depEl = document.getElementById('depletionTime');
-  if (!isFinite(hoursLeft)) {
-    depEl.textContent = '∞ hrs'; depEl.className = 'pred-countdown safe';
-  } else {
-    depEl.textContent = hLeft + 'h ' + mLeft + 'm';
-    depEl.className   = 'pred-countdown' + (hoursLeft < 2 ? ' crit' : hoursLeft < targetHours ? ' warn' : ' safe');
-  }
-
-  document.getElementById('currentRate').textContent  = totalPower.toFixed(0) + ' W';
-  document.getElementById('sustainRate').textContent  = sustainableW.toFixed(0) + ' W';
-  document.getElementById('sustainRate2').textContent = sustainableW.toFixed(0) + ' W';
-  document.getElementById('quotaRem').textContent     = remaining.toFixed(3) + ' kWh';
-  document.getElementById('quotaRemKwh').textContent  = remaining.toFixed(3) + ' kWh';
-  document.getElementById('timeRem').textContent      = isFinite(hoursLeft) ? hLeft + 'h ' + mLeft + 'm' : '∞';
-  document.getElementById('targetPeriod').textContent = targetHours + ' hours';
-
-  checkAutoShedSim(totalPower, sustainableW, hoursLeft);
-  renderChannels();
-}
-
-function checkAutoShedSim(totalPower, sustainableW, hoursLeft) {
-  const shedEl = document.getElementById('shedStatus');
-  if (!autoShed) {
-    shedEl.textContent = 'DISABLED'; shedEl.style.color = 'var(--text-dim)';
-    document.getElementById('sheddingBanner').classList.remove('visible');
-    return;
-  }
-  const over = totalPower > sustainableW * 1.05 && hoursLeft < targetHours;
-  if (over) {
-    for (const idx of [2, 1]) {   // A/C (LOW) first, then Fan/TV (MEDIUM); Lighting (HIGH) never
-      if (channels[idx].on && !channels[idx].shedding) {
-        channels[idx].on = false; channels[idx].shedding = true;
-        addAlert('warn', 'Auto-shed: ' + CHANNEL_NAMES[idx] + ' disconnected');
-        break;
+      function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth - 36;
+        canvas.height = 120;
       }
-    }
-    if (!isShedding) {
-      isShedding = true;
-      document.getElementById('sheddingBanner').classList.add('visible');
-      shedEl.textContent = 'ACTIVE ⚠'; shedEl.style.color = 'var(--red)';
-    }
-  } else {
-    if (isShedding) {
-      channels.forEach((ch, i) => {
-        if (ch.shedding) { ch.on = true; ch.shedding = false; }
-      });
-      isShedding = false;
-      document.getElementById('sheddingBanner').classList.remove('visible');
-      addAlert('info', 'Auto-shed cleared. Loads restored.');
-    }
-    shedEl.textContent = 'STANDBY'; shedEl.style.color = 'var(--green)';
-  }
-}
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
 
-// ─── SIMULATION LOOP (runs always, but only renders when not live/connecting) ──
-setInterval(() => {
-  if (isLiveMode || isConnecting) return;   // live or still trying — skip sim
-  simulateSensors();
-  chartData.ch1.push(channels[0].power); chartData.ch1.shift();
-  chartData.ch2.push(channels[1].power); chartData.ch2.shift();
-  chartData.ch3.push(channels[2].power); chartData.ch3.shift();
-  renderSimulated();
-  drawChart();
-}, 1000);
+      function drawChart() {
+        const W = canvas.width,
+          H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = "#1e2828";
+        ctx.lineWidth = 1;
+        for (let y = 0; y <= 4; y++) {
+          ctx.beginPath();
+          ctx.moveTo(0, (H / 4) * y);
+          ctx.lineTo(W, (H / 4) * y);
+          ctx.stroke();
+        }
+        const maxPower = 2000;
+        [
+          { data: chartData.ch1, color: "#3ddc84" }, // Lighting
+          { data: chartData.ch2, color: "#f5a623" }, // Fan/TV
+          { data: chartData.ch3, color: "#4fc3f7" }, // A/C
+        ].forEach(({ data, color }) => {
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          data.forEach((v, i) => {
+            const x = (i / (CHART_POINTS - 1)) * W;
+            const y = H - (v / maxPower) * H;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        });
+      }
 
-// ─── CHART ────────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('powerChart');
-const ctx    = canvas.getContext('2d');
+      // ─── USER CONTROLS ────────────────────────────────────────────────────────────
+      function toggleChannel(n) {
+        const i = n - 1;
+        const ch = channels[i];
 
-function resizeCanvas() {
-  canvas.width  = canvas.parentElement.clientWidth - 36;
-  canvas.height = 120;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — cannot switch " + CHANNEL_NAMES[i] + ".");
+          return;
+        }
 
-function drawChart() {
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-  ctx.strokeStyle = '#1e2828'; ctx.lineWidth = 1;
-  for (let y = 0; y <= 4; y++) {
-    ctx.beginPath(); ctx.moveTo(0, (H/4)*y); ctx.lineTo(W, (H/4)*y); ctx.stroke();
-  }
-  const maxPower = 2000;
-  [
-    { data: chartData.ch1, color: '#3ddc84' },  // Lighting
-    { data: chartData.ch2, color: '#f5a623' },  // Fan/TV
-    { data: chartData.ch3, color: '#4fc3f7' },  // A/C
-  ].forEach(({ data, color }) => {
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-    data.forEach((v, i) => {
-      const x = (i / (CHART_POINTS - 1)) * W;
-      const y = H - (v / maxPower) * H;
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  });
-}
+        const newState = !ch.on;
 
-// ─── USER CONTROLS ────────────────────────────────────────────────────────────
-function toggleChannel(n) {
-  const i        = n - 1;
-  const ch       = channels[i];
-  const newState = !ch.on;
+        // Optimistic update — reconciled against the device in applyLiveData()
+        ch.on = newState;
+        ch.shedding = false;
+        if (!ch.on) ch.power = 0;
+        const btn = document.getElementById("ch" + n + "-btn");
+        btn.textContent = ch.on ? "ON" : "OFF";
+        btn.className = "toggle-btn" + (ch.on ? " active" : "");
 
-  // Always update local state + button immediately (optimistic update)
-  ch.on = newState; ch.shedding = false;
-  if (!ch.on) ch.power = 0;
-  const btn = document.getElementById('ch' + n + '-btn');
-  btn.textContent = ch.on ? 'ON' : 'OFF';
-  btn.className   = 'toggle-btn' + (ch.on ? ' active' : '');
+        // Track intent until the ESP32 confirms it (reconciled in applyLiveData).
+        // Re-clicking simply updates the target; the device queue is FIFO so the
+        // last command wins, and reconciliation converges without desyncing.
+        desired[i] = newState;
+        cmdTime[i] = Date.now();
+        sendCommand({ cmd: "toggle", ch: CH_MAP[i], val: newState ? 1 : 0 });
+        addAlert(
+          "info",
+          CHANNEL_NAMES[i] + " turned " + (ch.on ? "ON" : "OFF"),
+        );
+      }
 
-  if (isLiveMode) {
-    // Track intent until the ESP32 confirms it (reconciled in applyLiveData).
-    // Re-clicking simply updates the target; the device queue is FIFO so the
-    // last command wins, and reconciliation converges without desyncing.
-    desired[i] = newState;
-    cmdTime[i] = Date.now();
-    sendCommand({ cmd: 'toggle', ch: CH_MAP[i], val: newState ? 1 : 0 });
-  }
-  addAlert('info', CHANNEL_NAMES[i] + ' turned ' + (ch.on ? 'ON' : 'OFF'));
-}
+      function toggleAutoShed() {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — cannot change auto-shed.");
+          return;
+        }
+        autoShed = !autoShed;
+        const btn = document.getElementById("autoShedToggle");
+        btn.textContent = autoShed ? "ON" : "OFF";
+        btn.className = "toggle-btn" + (autoShed ? " active" : "");
+        sendCommand({ cmd: "autoshed", val: autoShed ? 1 : 0 });
+        addAlert("info", "Auto-shed " + (autoShed ? "enabled" : "disabled"));
+      }
 
-function toggleAutoShed() {
-  autoShed = !autoShed;
-  const btn = document.getElementById('autoShedToggle');
-  btn.textContent = autoShed ? 'ON' : 'OFF';
-  btn.className   = 'toggle-btn' + (autoShed ? ' active' : '');
-  if (isLiveMode) {
-    sendCommand({ cmd: 'autoshed', val: autoShed ? 1 : 0 });
-  }
-  addAlert('info', 'Auto-shed ' + (autoShed ? 'enabled' : 'disabled'));
-}
+      function applySettings() {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — settings not sent to device.");
+          return;
+        }
+        const q = parseFloat(document.getElementById("quotaInput").value);
+        const h = parseFloat(document.getElementById("hoursInput").value);
+        if (q > 0 && h > 0) {
+          quotaKwh = q;
+          targetHours = h;
+          sendCommand({ cmd: "quota", kwh: q, h: h });
+          addAlert(
+            "info",
+            "Settings updated: Quota=" + q + "kWh, Period=" + h + "h",
+          );
+        }
+      }
 
-function applySettings() {
-  const q = parseFloat(document.getElementById('quotaInput').value);
-  const h = parseFloat(document.getElementById('hoursInput').value);
-  if (q > 0 && h > 0) {
-    quotaKwh    = q;
-    targetHours = h;
-    if (isLiveMode) {
-      sendCommand({ cmd: 'quota', kwh: q, h: h });
-    }
-    addAlert('info', 'Settings updated: Quota=' + q + 'kWh, Period=' + h + 'h');
-  }
-}
+      // ─── SEND COMMAND TO BACKEND ──────────────────────────────────────────────────
+      async function sendCommand(payload) {
+        try {
+          const res = await fetch(`${API_URL}/api/commands`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+        } catch (e) {
+          addAlert("warn", "Command failed: " + e.message);
+        }
+      }
 
-// ─── SEND COMMAND TO BACKEND ──────────────────────────────────────────────────
-async function sendCommand(payload) {
-  try {
-    const res = await fetch(`${API_URL}/api/commands`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-  } catch(e) {
-    addAlert('warn', 'Command failed: ' + e.message);
-  }
-}
+      // ─── ENERGY RESET ─────────────────────────────────────────────────────────────
+      function resetEnergy() {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — reset not sent to device.");
+          return;
+        }
+        // Do NOT zero local state here. The counters are the device's; zeroing the
+        // display would show 0.000 kWh whether or not the ESP32 actually honoured
+        // the command. Wait for the next frame to tell us what really happened.
+        sendCommand({ cmd: "reset_energy" });
+        addAlert("info", "Energy reset requested — awaiting device confirmation.");
+      }
 
-// ─── ENERGY RESET ─────────────────────────────────────────────────────────────
-function resetEnergy() {
-  energyUsedTotal = 0;
-  channels.forEach(ch => { ch.energy = 0; });
-  if (isLiveMode) {
-    sendCommand({ cmd: 'reset_energy' });
-  }
-  addAlert('info', 'Energy counters reset to zero.');
-}
+      // ─── ALERTS ───────────────────────────────────────────────────────────────────
+      function clearAlerts() {
+        document.getElementById("alertLog").innerHTML = "";
+      }
 
-// ─── ALERTS ───────────────────────────────────────────────────────────────────
-function clearAlerts() {
-  document.getElementById('alertLog').innerHTML = '';
-}
-
-function addAlert(type, msg) {
-  const log  = document.getElementById('alertLog');
-  const item = document.createElement('div');
-  item.className = 'alert-item';
-  const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  item.innerHTML = `
+      function addAlert(type, msg) {
+        const log = document.getElementById("alertLog");
+        const item = document.createElement("div");
+        item.className = "alert-item";
+        const t = new Date().toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        item.innerHTML = `
     <span class="alert-time">${t}</span>
     <div class="alert-dot ${type}"></div>
     <span class="alert-msg">${msg}</span>
   `;
-  log.insertBefore(item, log.firstChild);
-  if (log.children.length > 20) log.removeChild(log.lastChild);
-}
+        log.insertBefore(item, log.firstChild);
+        if (log.children.length > 20) log.removeChild(log.lastChild);
+      }
 
-// ─── BOOT ─────────────────────────────────────────────────────────────────────
-addAlert('info', 'System initialised. Attempting backend connection...');
-connectWebSocket();
-</script>
-</body>
+      // ─── BOOT ─────────────────────────────────────────────────────────────────────
+      addAlert("info", "System initialised. Attempting backend connection...");
+      connectWebSocket();
+    </script>
+  </body>
 </html>

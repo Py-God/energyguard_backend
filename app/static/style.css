@@ -693,7 +693,6 @@ letter-spacing: 1px;
 border: 1px solid;
 transition: all 0.4s;
 }
-.conn-tag.sim        { background: #1a1a2e; border-color: #2a2a5e; color: #6666cc; }
 .conn-tag.live       { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 .conn-tag.lost       { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 .conn-tag.connecting { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
