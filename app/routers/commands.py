@@ -49,9 +49,9 @@ async def enqueue_command(command: AnyCommand):
 
     **Toggle a channel:**
     ```json
-    {"cmd": "toggle", "ch": 3, "val": 0}
+    {"cmd": "toggle", "ch": 2, "val": 0}
     ```
-    ch is 0-indexed (0=CH1 Medical, 1=CH2 Lights, 2=CH3 Fan/TV, 3=CH4 AC)
+    ch is 0-indexed (0=CH1 Lighting, 1=CH2 Fan/TV, 2=CH3 Air Conditioner)
 
     **Update energy quota:**
     ```json
@@ -86,7 +86,7 @@ async def collect_commands():
     Example response:
     ```json
     {
-      "commands": [{"cmd": "toggle", "ch": 3, "val": 0}],
+      "commands": [{"cmd": "toggle", "ch": 2, "val": 0}],
       "count": 1
     }
     ```
