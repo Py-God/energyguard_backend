@@ -486,7 +486,23 @@
       // ─── WEBSOCKET ────────────────────────────────────────────────────────────────
       let ws = null;
       let wsReconnectTimer = null;
-      let wsMissedBeats = 0;
+
+      // ── Device-liveness watchdog ────────────────────────────────────────────
+      // ws.onclose tells us the BACKEND went away. It says nothing about the
+      // ESP32. If the device browns out, drops WiFi or stalls in its comms task,
+      // the server holds this socket open perfectly happily — no onclose fires,
+      // isLiveMode stays true, and the last frame sits frozen on screen under a
+      // "● LIVE" tag forever. That is the simulator problem wearing a different
+      // hat: the dashboard asserting a present-tense reading it has no source
+      // for. So we time the frames themselves, not the socket.
+      //
+      // wsMissedBeats used to live here — reset in onopen and onmessage and
+      // never incremented anywhere. This is the watchdog it was meant to be.
+      const DATA_TIMEOUT_MS = 15000; // ~7 missed posts at TX_INTERVAL = 2000ms
+      // null, not 0: 0 is a legal Date.now() value in principle, and a sentinel
+      // that can collide with real data is a bug waiting for a clock change.
+      let lastFrameAt = null;        // Date.now() of the last frame we could parse
+      let dataStale = false;         // socket open, device silent
 
       function connectWebSocket() {
         isConnecting = true;
@@ -508,7 +524,11 @@
           clearTimeout(connectTimeout);
           isConnecting = false;
           isLiveMode = true;
-          wsMissedBeats = 0;
+          // Seed the clock rather than leaving it at 0, or the watchdog would
+          // see an infinitely old "last frame" and declare the device dead in
+          // the same second the socket came up.
+          lastFrameAt = Date.now();
+          dataStale = false;
           setConnTag("live", "● LIVE");
           addAlert(
             "info",
@@ -519,9 +539,30 @@
         };
 
         ws.onmessage = (event) => {
-          wsMissedBeats = 0;
           try {
             const d = JSON.parse(event.data);
+
+            // Stamp only AFTER a successful parse. A malformed frame proves the
+            // socket is carrying bytes, not that the device is reporting
+            // sensibly — counting it as liveness would keep a garbage-emitting
+            // device looking healthy.
+            lastFrameAt = Date.now();
+
+            if (dataStale) {
+              // Device came back on its own. The socket never dropped, so
+              // nothing else would have restored the live state.
+              dataStale = false;
+              isLiveMode = true;
+              setConnTag("live", "● LIVE");
+              addAlert("info", "Device reporting again.");
+              // Deliberately NOT calling fetchHistory() here. The backend keeps
+              // its last 120 readings regardless of age, so after a 5-minute
+              // silence a backfill would paint pre-outage load at the right-hand
+              // edge of the chart as though it were current. renderOffline()
+              // already zeroed the series; letting live frames push in from the
+              // right refills it honestly.
+            }
+
             applyLiveData(d);
           } catch (e) {
             console.warn("WS parse error:", e);
@@ -532,6 +573,11 @@
           clearTimeout(connectTimeout);
           isConnecting = false;
           isLiveMode = false;
+          // Socket-level loss supersedes device-level staleness: renderOffline()
+          // below covers both, and resetting here stops the watchdog firing a
+          // duplicate alert on top of the disconnect one.
+          lastFrameAt = null;
+          dataStale = false;
           setConnTag("lost", "○ OFFLINE — NO DEVICE DATA");
           addAlert("warn", "Connection lost. Retrying in 5s...");
           // Blank the readings. Leaving the last live frame on screen would let a
@@ -780,6 +826,32 @@
           );
         }
       }
+
+      // ─── DEVICE-LIVENESS WATCHDOG ────────────────────────────────────────────────
+      function checkDataFreshness() {
+        // Only meaningful while the socket is actually open. If it is not,
+        // ws.onclose has already run renderOffline() and scheduled a reconnect.
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        if (dataStale) return;   // already reported; onmessage handles recovery
+        if (lastFrameAt === null) return;
+
+        const age = Date.now() - lastFrameAt;
+        if (age <= DATA_TIMEOUT_MS) return;
+
+        dataStale = true;
+        isLiveMode = false;   // also makes the control guards refuse to send
+                              // commands to a device that is not answering
+        setConnTag("lost", "○ DEVICE NOT REPORTING");
+        addAlert(
+          "warn",
+          "No data from ESP32 for " + Math.round(age / 1000) + "s. Readings cleared.",
+        );
+        renderOffline();
+      }
+
+      // 1 Hz is plenty: the resolution we need is "is this older than 15s", and
+      // the tick is three comparisons and an early return in the normal case.
+      setInterval(checkDataFreshness, 1000);
 
       // ─── OFFLINE RENDER ──────────────────────────────────────────────────────────
       // There is no simulation fallback by design. When the device or backend is
