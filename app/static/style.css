@@ -272,6 +272,7 @@ display: flex;
 align-items: center;
 gap: 10px;
 margin-top: 10px;
+flex-wrap: wrap;
 }
 
 .period-label {
@@ -284,10 +285,11 @@ white-space: nowrap;
 
 .period-bar-track {
 flex: 1;
-height: 4px;
+min-width: 80px;
+height: 8px;
 background: var(--surface2);
 border: 1px solid var(--border);
-border-radius: 2px;
+border-radius: 4px;
 overflow: hidden;
 }
 
@@ -295,6 +297,7 @@ overflow: hidden;
 height: 100%;
 width: 0%;
 background: var(--blue);
+box-shadow: 0 0 6px var(--blue);
 transition: width 0.4s ease;
 }
 
@@ -318,11 +321,24 @@ color: var(--amber);
 .clock-warn.visible { display: block; }
 
 /* MAIN GRID */
+/* align-items was `start`, which let each column end at its own natural
+   height — the source of the ragged bottom edge. Stretching both to the row
+   height and giving each column one flexible child (the chart on the left,
+   the alert log on the right) makes them finish flush whichever one happens
+   to be shorter, rather than only fixing the current content. */
 .main-grid {
 display: grid;
 grid-template-columns: 1fr 340px;
 gap: 16px;
-align-items: start;
+align-items: stretch;
+}
+
+.left-panel {
+display: flex;
+flex-direction: column;
+gap: 16px;
+min-width: 0;   /* without this the canvas floors the column width and the
+                   whole grid overflows horizontally instead of shrinking */
 }
 
 /* LOAD CHANNELS */
@@ -499,6 +515,7 @@ background: var(--green-dim);
 display: flex;
 flex-direction: column;
 gap: 16px;
+min-width: 0;
 }
 
 /* PREDICTION */
@@ -549,10 +566,15 @@ font-size: 11px;
 .alerts-card {
 background: var(--surface);
 border: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+flex: 1;          /* absorbs the slack when the RIGHT column is the short one */
+min-height: 0;
 }
 
 .alert-log {
-max-height: 200px;
+flex: 1;
+min-height: 120px;
 overflow-y: auto;
 }
 
@@ -672,15 +694,38 @@ color: #000;
 .chart-section {
 background: var(--surface);
 border: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+flex: 1;          /* absorbs the slack when the LEFT column is the short one */
+min-height: 0;
 }
 
 .chart-body {
 padding: 12px 18px 16px;
 position: relative;
+flex: 1;
+display: flex;
+flex-direction: column;
+min-height: 0;
+}
+
+/* The canvas is absolutely positioned inside this wrapper rather than being a
+   flex child itself. A canvas has an intrinsic size driven by its width/height
+   attributes, and those are exactly what the resize handler writes — as a flex
+   child it would feed its own measurement back into the layout and oscillate.
+   Taking it out of flow breaks that loop: the wrapper is measured, the canvas
+   just fills it. */
+.chart-canvas-wrap {
+flex: 1;
+position: relative;
+min-height: 120px;
 }
 
 canvas {
+position: absolute;
+inset: 0;
 width: 100% !important;
+height: 100% !important;
 display: block;
 }
 
@@ -750,3 +795,139 @@ transition: all 0.4s;
 .conn-tag.live       { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 .conn-tag.lost       { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 .conn-tag.connecting { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   The layout was fixed-width: a 340px sidebar next to a 1fr column, four stat
+   cards across, and a 180px label column in every channel row. Below roughly
+   1024px that adds up to more than the viewport, so a phone rendered it
+   zoomed-out rather than reflowed. These are the only @media rules in the
+   file — everything above is the desktop case.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet / small laptop ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Single column means each panel is its own grid row at natural height, so
+     there is no slack for the chart or the log to absorb. Hand them back
+     explicit heights or the chart collapses to its 120px floor. */
+  .chart-section,
+  .alerts-card {
+    flex: 0 0 auto;
+  }
+
+  .chart-canvas-wrap {
+    min-height: 180px;
+  }
+
+  .alert-log {
+    max-height: 220px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Large phone / small tablet ─────────────────────────────── */
+@media (max-width: 720px) {
+  main {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  header {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+
+  /* Channel rows were 180px | 1fr | auto. The fixed first track is wider than
+     half a phone screen, so the metrics get crushed to unreadable slivers
+     before anything wraps. Stacking keeps all four readings full width. */
+  .channel-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .channel-row .toggle-btn {
+    width: 100%;
+  }
+
+  .quota-header,
+  .quota-meta {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Comfortable touch targets — the desktop sizes are mouse-sized. */
+  .toggle-btn,
+  .apply-btn {
+    min-height: 34px;
+  }
+
+  .setting-input {
+    min-height: 30px;
+  }
+}
+
+/* ── Small phone ────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  main {
+    padding: 10px;
+  }
+
+  .stat-card {
+    padding: 12px 14px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .channel-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .section-header,
+  .channel-row,
+  .settings-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chart-body {
+    padding: 10px 14px 14px;
+  }
+
+  /* The two labels plus a usable bar do not fit on one line at this width.
+     Push the bar onto its own full-width line below them and spread the
+     labels to the edges, rather than letting the bar squeeze to a stub. */
+  .period-row {
+    justify-content: space-between;
+  }
+
+  .period-bar-track {
+    flex: 1 0 100%;
+    order: 3;
+  }
+
+  .live-clock {
+    display: none;
+  }
+}

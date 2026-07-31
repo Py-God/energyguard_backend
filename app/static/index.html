@@ -114,7 +114,7 @@
 
       <!-- MAIN GRID -->
       <div class="main-grid">
-        <div style="display: flex; flex-direction: column; gap: 16px">
+        <div class="left-panel">
           <!-- LOAD CHANNELS -->
           <div class="channels-section">
             <div class="section-header">
@@ -297,7 +297,9 @@
                   A/C
                 </div>
               </div>
-              <canvas id="powerChart" height="120"></canvas>
+              <div class="chart-canvas-wrap">
+                <canvas id="powerChart"></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -1065,16 +1067,41 @@
       const canvas = document.getElementById("powerChart");
       const ctx = canvas.getContext("2d");
 
+      // CSS-pixel size of the drawing area. Kept separate from canvas.width /
+      // canvas.height, which are now the backing-store size in DEVICE pixels.
+      let chartW = 0;
+      let chartH = 0;
+
       function resizeCanvas() {
-        canvas.width = canvas.parentElement.clientWidth - 36;
-        canvas.height = 120;
+        const wrap = canvas.parentElement;
+        if (!wrap) return;
+        // On a phone the backing store must be devicePixelRatio times the CSS
+        // size or every line lands between physical pixels and the whole chart
+        // looks smeared. The transform below lets drawChart keep working in
+        // CSS pixels regardless.
+        const dpr = window.devicePixelRatio || 1;
+        chartW = wrap.clientWidth;
+        chartH = wrap.clientHeight;
+        canvas.width = Math.max(1, Math.round(chartW * dpr));
+        canvas.height = Math.max(1, Math.round(chartH * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawChart();
       }
       resizeCanvas();
       window.addEventListener("resize", resizeCanvas);
 
+      // The window `resize` event alone is not enough now that the chart's
+      // height comes from the grid: the column can change height when the
+      // alert log grows or the shedding banner appears, with no window resize
+      // to hear about it.
+      if (window.ResizeObserver) {
+        new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+      }
+
       function drawChart() {
-        const W = canvas.width,
-          H = canvas.height;
+        const W = chartW,
+          H = chartH;
+        if (W <= 0 || H <= 0) return;
         ctx.clearRect(0, 0, W, H);
         ctx.strokeStyle = "#1e2828";
         ctx.lineWidth = 1;
