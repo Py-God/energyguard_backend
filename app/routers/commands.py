@@ -25,6 +25,8 @@ from pydantic import Field
 from app.models.schemas import (
     ToggleCommand,
     QuotaCommand,
+    TopUpCommand,
+    AutoRenewCommand,
     AutoShedCommand,
     ResetEnergyCommand,
     CommandListResponse,
@@ -34,9 +36,10 @@ from app.store import store
 
 router = APIRouter(prefix="/api/commands", tags=["Commands"])
 
-# Discriminated union so FastAPI shows all 4 variants in /docs
+# Discriminated union so FastAPI shows all 6 variants in /docs
 AnyCommand = Annotated[
-    Union[ToggleCommand, QuotaCommand, AutoShedCommand, ResetEnergyCommand],
+    Union[ToggleCommand, QuotaCommand, TopUpCommand,
+          AutoRenewCommand, AutoShedCommand, ResetEnergyCommand],
     Field(discriminator="cmd")
 ]
 
@@ -49,14 +52,28 @@ async def enqueue_command(command: AnyCommand):
 
     **Toggle a channel:**
     ```json
-    {"cmd": "toggle", "ch": 2, "val": 0}
+    {"cmd": "toggle", "ch": 3, "val": 0}
     ```
-    ch is 0-indexed (0=CH1 Lighting, 1=CH2 Fan/TV, 2=CH3 Air Conditioner)
+    ch is 0-indexed (0=CH1 Medical, 1=CH2 Lights, 2=CH3 Fan/TV, 3=CH4 AC)
 
-    **Update energy quota:**
+    **Update the budget (edits the running period):**
     ```json
     {"cmd": "quota", "kwh": 5.0, "h": 24}
     ```
+    Changing `h` moves the deadline; it does not restart the clock. Set this
+    to 12 at hour 3 of a 24 h period and 9 hours remain, not 12.
+
+    **Buy more credit (does not restart the clock):**
+    ```json
+    {"cmd": "topup", "kwh": 2.0}
+    ```
+
+    **Period rollover behaviour:**
+    ```json
+    {"cmd": "renew", "val": 0}
+    ```
+    1 = refill to the nominal quota at each deadline. 0 = carry the leftover
+    forward and stay shed at zero until a top-up arrives.
 
     **Enable / disable auto-shedding:**
     ```json
@@ -86,7 +103,7 @@ async def collect_commands():
     Example response:
     ```json
     {
-      "commands": [{"cmd": "toggle", "ch": 2, "val": 0}],
+      "commands": [{"cmd": "toggle", "ch": 3, "val": 0}],
       "count": 1
     }
     ```
