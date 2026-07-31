@@ -8,7 +8,13 @@
       href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/style.css" />
+    <!-- Version query string is a cache-buster, not decoration. FastAPI's
+         StaticFiles sends no Cache-Control header, so browsers fall back to
+         heuristic freshness and will happily serve a stylesheet from disk
+         cache for hours after a deploy. That is how a PC ends up rendering
+         old CSS against new markup while a phone that never cached it renders
+         correctly. Bump this number on every CSS change. -->
+    <link rel="stylesheet" href="/static/style.css?v=2" />
   </head>
   <body>
     <header>
