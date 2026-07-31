@@ -72,8 +72,17 @@
               <div class="quota-meta-value" id="quotaRem">--</div>
             </div>
             <div class="quota-meta-item">
-              <div class="quota-meta-label">Time Remaining</div>
+              <!-- Renamed from "Time Remaining". There are now two clocks on
+                   this page and one of them was already here: this is the
+                   depletion ETA at the current draw, NOT when the period ends.
+                   Leaving both unqualified would make them look interchangeable
+                   when they routinely disagree. -->
+              <div class="quota-meta-label">Until Depletion</div>
               <div class="quota-meta-value warn" id="timeRem">--</div>
+            </div>
+            <div class="quota-meta-item">
+              <div class="quota-meta-label">Period Ends In</div>
+              <div class="quota-meta-value" id="periodLeft">--</div>
             </div>
             <div class="quota-meta-item">
               <div class="quota-meta-label">Sustainable Rate</div>
@@ -87,6 +96,19 @@
         <div class="quota-ticks">
           <span>0%</span><span>25%</span><span>50%</span><span>75%</span
           ><span>100%</span>
+        </div>
+
+        <div class="period-row">
+          <span class="period-label" id="periodMode">--</span>
+          <div class="period-bar-track">
+            <div class="period-bar-fill" id="periodBar" style="width: 0%"></div>
+          </div>
+          <span class="period-label" id="periodElapsed">--</span>
+        </div>
+
+        <div class="clock-warn" id="clockWarn">
+          ⚠ DEVICE CLOCK NOT SYNCED — pacing is running on uptime, not wall
+          time. The period may have restarted at the last reboot.
         </div>
       </div>
 
@@ -360,8 +382,46 @@
                   </button>
                 </div>
               </div>
+              <div class="setting-row">
+                <span class="setting-label">AT PERIOD END</span>
+                <div class="setting-control">
+                  <button
+                    class="toggle-btn"
+                    id="autoRenewToggle"
+                    onclick="toggleAutoRenew()"
+                    style="width: 74px"
+                  >
+                    --
+                  </button>
+                </div>
+              </div>
               <button class="apply-btn" onclick="applySettings()">
                 ▶ APPLY SETTINGS
+              </button>
+              <div class="setting-row" style="margin-top: 10px">
+                <span class="setting-label">TOP UP</span>
+                <div class="setting-control">
+                  <input
+                    class="setting-input"
+                    id="topupInput"
+                    type="number"
+                    value="1"
+                    min="0.1"
+                    step="0.1"
+                  />
+                  <span class="setting-unit">kWh</span>
+                </div>
+              </div>
+              <button
+                class="apply-btn"
+                onclick="topUp()"
+                style="
+                  background: var(--green-dim);
+                  border-color: var(--green);
+                  color: var(--green);
+                "
+              >
+                ＋ ADD CREDIT
               </button>
               <button
                 class="apply-btn"
@@ -437,8 +497,16 @@
         { on: true, power: 0, current: 0, energy: 0, shedding: false }, // A/C       (LOW)
       ];
       let voltage = 220;
-      let quotaKwh = 5;
+      let quotaKwh = 5;      // THIS period's credit (device d.q) — grows on top-up
+      let renewKwh = 5;      // nominal purchase (device d.rq) — auto-renew refills here
       let targetHours = 24;
+      let elapsedHours = 0;
+      let hoursLeft = 24;
+      let autoRenew = false;
+      // Assume the device clock is good until it says otherwise, so the warning
+      // does not flash during the first frames or against firmware that predates
+      // the ck field entirely.
+      let clockValid = true;
       let energyUsedTotal = 0;
       let autoShed = true;
       let isShedding = false;
@@ -605,6 +673,13 @@
         // away whatever the user had set. The device is the source of truth.
         if (d.q  != null) quotaKwh    = d.q;
         if (d.th != null) targetHours = d.th;
+        // Pacing horizon. Same rule as above — these are device state, echoed
+        // back once stored, never assumed locally.
+        if (d.rq != null) renewKwh     = d.rq;
+        if (d.el != null) elapsedHours = d.el;
+        if (d.hl != null) hoursLeft    = d.hl;
+        if (d.ar != null) autoRenew    = d.ar === 1;
+        clockValid = d.ck != null ? d.ck === 1 : true;
         syncSettingInputs();
 
         if (d.ch) {
@@ -679,6 +754,15 @@
         if (hEl && document.activeElement !== hEl) hEl.value = targetHours;
       }
 
+      // Hours as "Xh Ym". Returns the infinity glyph for the 9999 sentinel the
+      // firmware sends when avgPower is too low to project against.
+      function fmtHM(h) {
+        if (h == null || h > 999) return "∞";
+        const hh = Math.floor(h);
+        const mm = Math.floor((h - hh) * 60);
+        return hh + "h " + mm + "m";
+      }
+
       // ─── RENDER (LIVE MODE) ───────────────────────────────────────────────────────
       // Uses prediction values sent directly from the ESP32 / backend.
       function renderLive(d) {
@@ -687,7 +771,13 @@
         const qr = d.qr ?? 0;
         const sr = d.sr ?? 0;
         const eta = d.eta ?? 9999;
-        const pct = (qr / quotaKwh) * 100;
+        // Denominator is max(period credit, nominal), not quotaKwh alone.
+        // Using q by itself makes the bar snap back to 100% after every
+        // carry-over rollover, hiding the fact that the stock shrank; using rq
+        // by itself sends the bar past 100% after a top-up. The max is correct
+        // in both directions.
+        const quotaScale = Math.max(quotaKwh, renewKwh) || 1;
+        const pct = (qr / quotaScale) * 100;
 
         document.getElementById("totalPower").textContent =
           totalPower.toFixed(1);
@@ -731,6 +821,24 @@
           eta > 999 ? "∞" : hLeft + "h " + mLeft + "m";
         document.getElementById("targetPeriod").textContent =
           targetHours + " hours";
+
+        // ── Pacing horizon ──────────────────────────────────────────────────
+        const periodPct = targetHours > 0 ? (elapsedHours / targetHours) * 100 : 0;
+        const pBar = document.getElementById("periodBar");
+        pBar.style.width = Math.max(0, Math.min(100, periodPct)) + "%";
+        document.getElementById("periodElapsed").textContent =
+          elapsedHours.toFixed(1) + " / " + targetHours + "h";
+        document.getElementById("periodLeft").textContent = fmtHM(hoursLeft);
+        document.getElementById("periodMode").textContent =
+          autoRenew ? "AUTO-RENEW" : "CARRY-OVER";
+
+        const renewBtn = document.getElementById("autoRenewToggle");
+        renewBtn.textContent = autoRenew ? "RENEW" : "CARRY";
+        renewBtn.className = "toggle-btn" + (autoRenew ? " active" : "");
+
+        document
+          .getElementById("clockWarn")
+          .classList.toggle("visible", !clockValid);
 
         // Shed status
         const shedEl = document.getElementById("shedStatus");
@@ -886,6 +994,23 @@
         dash("quotaRemKwh", "--");
         dash("targetPeriod", "--");
         dash("activeCount", "--");
+        dash("periodLeft", "--");
+        dash("periodElapsed", "--");
+        dash("periodMode", "--");
+
+        const pBar = document.getElementById("periodBar");
+        if (pBar) pBar.style.width = "0%";
+
+        const renewBtn = document.getElementById("autoRenewToggle");
+        if (renewBtn) {
+          renewBtn.textContent = "--";
+          renewBtn.className = "toggle-btn";
+        }
+
+        // The clock warning is an assertion about the device. With no link we
+        // cannot make it, so it comes down with everything else.
+        const cw = document.getElementById("clockWarn");
+        if (cw) cw.classList.remove("visible");
 
         const depEl = document.getElementById("depletionTime");
         if (depEl) {
@@ -1020,6 +1145,37 @@
         btn.className = "toggle-btn" + (autoShed ? " active" : "");
         sendCommand({ cmd: "autoshed", val: autoShed ? 1 : 0 });
         addAlert("info", "Auto-shed " + (autoShed ? "enabled" : "disabled"));
+      }
+
+      function toggleAutoRenew() {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — cannot change renewal mode.");
+          return;
+        }
+        const next = !autoRenew;
+        // autoRenew is deliberately NOT set here. The device echoes it back in
+        // d.ar once it has stored it — the same discipline as applySettings and
+        // resetEnergy. Flipping the label locally would show the new mode
+        // whether or not the command ever reached the ESP32.
+        sendCommand({ cmd: "renew", val: next ? 1 : 0 });
+        addAlert(
+          "info",
+          (next ? "Auto-renew" : "Carry-over") +
+            " at period end requested — awaiting device.",
+        );
+      }
+
+      function topUp() {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — top-up not sent to device.");
+          return;
+        }
+        const k = parseFloat(document.getElementById("topupInput").value);
+        if (!(k > 0)) return;
+        // Credit only. A top-up must not restart the pacing clock, so there is
+        // no reset_energy alongside it — see Predictor_TopUp.
+        sendCommand({ cmd: "topup", kwh: k });
+        addAlert("info", "Top-up of " + k + " kWh requested — awaiting device.");
       }
 
       function applySettings() {

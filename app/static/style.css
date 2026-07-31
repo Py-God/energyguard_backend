@@ -263,6 +263,60 @@ font-size: 9px;
 color: var(--text-dim);
 }
 
+/* PACING HORIZON — deliberately a thinner, dimmer bar than .quota-bar-fill.
+   The two answer different questions (credit left vs. period elapsed) and the
+   shed decision is the ratio between them, so they must not read as the same
+   measurement drawn twice. */
+.period-row {
+display: flex;
+align-items: center;
+gap: 10px;
+margin-top: 10px;
+}
+
+.period-label {
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 1px;
+color: var(--text-dim);
+white-space: nowrap;
+}
+
+.period-bar-track {
+flex: 1;
+height: 4px;
+background: var(--surface2);
+border: 1px solid var(--border);
+border-radius: 2px;
+overflow: hidden;
+}
+
+.period-bar-fill {
+height: 100%;
+width: 0%;
+background: var(--blue);
+transition: width 0.4s ease;
+}
+
+/* Hidden until the device reports ck === 0. An unsynced clock means elapsed
+   time is uptime-derived, so the period may silently have restarted at the
+   last reboot — the user needs to know the pacing number is not trustworthy
+   rather than reading it as fact. */
+.clock-warn {
+display: none;
+margin-top: 10px;
+padding: 6px 10px;
+border: 1px solid var(--amber);
+background: var(--amber-dim);
+border-radius: 3px;
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 0.5px;
+color: var(--amber);
+}
+
+.clock-warn.visible { display: block; }
+
 /* MAIN GRID */
 .main-grid {
 display: grid;
