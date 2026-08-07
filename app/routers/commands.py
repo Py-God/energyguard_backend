@@ -32,6 +32,7 @@ from app.models.schemas import (
     CommandListResponse,
     StatusResponse,
 )
+from app.recorder import recorder
 from app.store import store
 
 router = APIRouter(prefix="/api/commands", tags=["Commands"])
@@ -85,7 +86,14 @@ async def enqueue_command(command: AnyCommand):
     {"cmd": "reset_energy"}
     ```
     """
-    store.enqueue_command(command.model_dump())
+    payload = command.model_dump()
+    store.enqueue_command(payload)
+    # Logged as source='user': this records that the API ACCEPTED the
+    # instruction, not that the ESP32 carried it out. The device-sourced event
+    # written when the change shows up in telemetry is the evidence. Keeping
+    # both is what makes a command that never took effect visible in the
+    # history instead of invisible.
+    recorder.note_command(payload)
     return StatusResponse(
         status="queued",
         message=f"Command '{command.cmd}' queued. Will be delivered on next ESP32 poll."

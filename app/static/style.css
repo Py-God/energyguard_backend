@@ -931,3 +931,223 @@ transition: all 0.4s;
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEW SWITCHER + HISTORY VIEW
+   Added with the analytics database. The live dashboard answers "what is
+   happening now"; this answers "what has this household been doing", which
+   needs weeks of stored data and a different set of charts.
+   ═══════════════════════════════════════════════════════════════ */
+
+.view-tabs {
+display: flex;
+gap: 2px;
+border-bottom: 1px solid var(--border);
+}
+
+.view-tab {
+background: none;
+border: none;
+border-bottom: 2px solid transparent;
+color: var(--text-dim);
+font-family: var(--cond);
+font-size: 13px;
+font-weight: 600;
+letter-spacing: 2px;
+padding: 8px 18px;
+cursor: pointer;
+transition: color 0.2s, border-color 0.2s;
+}
+
+.view-tab:hover { color: var(--text-mid); }
+
+.view-tab.active {
+color: var(--amber);
+border-bottom-color: var(--amber);
+}
+
+/* Only one view is in the document flow at a time. The specificity here
+   (0,2,1) deliberately beats .shedding-banner.visible (0,2,0), so the
+   shedding banner cannot reappear over the history view when the ESP32
+   starts shedding while the user is reading last month's charts. */
+#viewHistory { display: none; }
+body.view-history .live-only { display: none; }
+body.view-history #viewHistory {
+display: flex;
+flex-direction: column;
+gap: 16px;
+}
+
+/* TOOLBAR */
+.hist-toolbar {
+display: flex;
+align-items: center;
+gap: 16px;
+flex-wrap: wrap;
+}
+
+.hist-range {
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.hist-range-label {
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 1px;
+color: var(--text-dim);
+margin-right: 4px;
+}
+
+.range-btn {
+background: var(--surface);
+border: 1px solid var(--border);
+color: var(--text-dim);
+font-family: var(--mono);
+font-size: 10px;
+letter-spacing: 1px;
+padding: 5px 12px;
+cursor: pointer;
+transition: all 0.2s;
+}
+
+.range-btn:hover { border-color: var(--text-dim); color: var(--text-mid); }
+
+.range-btn.active {
+background: var(--amber-dim);
+border-color: var(--amber);
+color: var(--amber);
+}
+
+.hist-status {
+font-family: var(--mono);
+font-size: 10px;
+color: var(--text-dim);
+flex: 1;
+min-width: 0;
+}
+
+.hist-status.error { color: var(--red); }
+
+.hist-refresh { width: auto; padding: 6px 14px; }
+
+/* The unattributed-energy notice. Hidden when there is nothing to disclose —
+   it must never become chrome the user learns to scroll past. */
+.hist-warn {
+display: none;
+background: var(--amber-dim);
+border: 1px solid var(--amber);
+color: var(--amber);
+font-size: 11px;
+line-height: 1.5;
+padding: 10px 14px;
+}
+
+.hist-warn.visible { display: block; }
+
+/* CARDS */
+.hist-card {
+background: var(--surface);
+border: 1px solid var(--border);
+}
+
+/* The two chart cards are flex:1 in the live layout so they can absorb column
+   slack. Here each is its own row at natural height, so that must be undone
+   or they collapse onto the 120px canvas floor. */
+.chart-section.hist-card { flex: 0 0 auto; }
+
+.hist-canvas-wrap { min-height: 220px; }
+
+.hist-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 16px;
+}
+
+/* TABLES */
+.hist-table-wrap {
+overflow-x: auto;
+max-height: 260px;
+overflow-y: auto;
+}
+
+.hist-table-wrap.tall { max-height: 380px; }
+
+.hist-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 11px;
+}
+
+.hist-table th {
+position: sticky;
+top: 0;
+background: var(--surface2);
+color: var(--text-dim);
+font-family: var(--cond);
+font-size: 10px;
+font-weight: 600;
+letter-spacing: 1px;
+text-transform: uppercase;
+text-align: left;
+padding: 8px 14px;
+border-bottom: 1px solid var(--border);
+white-space: nowrap;
+}
+
+.hist-table td {
+padding: 8px 14px;
+border-bottom: 1px solid var(--border);
+color: var(--text-mid);
+white-space: nowrap;
+}
+
+.hist-table tr:last-child td { border-bottom: none; }
+.hist-table tbody tr:hover { background: var(--surface2); }
+
+.hist-mono { font-family: var(--mono); }
+.hist-hot { color: var(--red); }
+.hist-ok { color: var(--green); }
+.hist-dim { color: var(--text-dim); }
+
+.hist-empty {
+color: var(--text-dim);
+font-style: italic;
+text-align: center;
+padding: 20px 14px !important;
+}
+
+.hist-src {
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 1px;
+padding: 2px 6px;
+border: 1px solid;
+}
+
+.hist-src.dev  { background: var(--blue-dim);  border-color: var(--blue);  color: var(--blue); }
+.hist-src.user { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+.hist-flag {
+font-family: var(--mono);
+font-size: 8px;
+letter-spacing: 1px;
+padding: 1px 5px;
+margin-left: 6px;
+background: var(--amber-dim);
+border: 1px solid var(--amber);
+color: var(--amber);
+}
+
+@media (max-width: 1024px) {
+  .hist-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .view-tab { padding: 8px 14px; font-size: 12px; }
+  .hist-toolbar { gap: 10px; }
+  .hist-status { flex: 1 0 100%; order: 3; }
+  .hist-canvas-wrap { min-height: 180px; }
+  .hist-table th, .hist-table td { padding: 7px 10px; }
+}

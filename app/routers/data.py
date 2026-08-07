@@ -29,6 +29,7 @@ from typing import List
 import json
 
 from app.models.schemas import SensorPayload, StatusResponse
+from app.recorder import recorder
 from app.store import store
 
 router = APIRouter(prefix="/api/data", tags=["Data"])
@@ -79,6 +80,13 @@ async def receive_data(payload: SensorPayload):
         **payload.model_dump()
     }
     await manager.broadcast(broadcast_payload)
+
+    # History recording happens LAST and never blocks: offer() is float
+    # arithmetic in memory, and anything that touches Supabase is handed to a
+    # detached background task. The live path above — in-memory store, then
+    # dashboard broadcast — completes whether or not the database exists, so
+    # a Supabase outage costs history, not shedding.
+    recorder.offer(reading)
 
     return StatusResponse(status="ok", message="Reading stored")
 

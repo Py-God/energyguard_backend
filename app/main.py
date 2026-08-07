@@ -19,16 +19,45 @@ Auto-generated API docs:
     http://localhost:3000/redoc  ← ReDoc (readable)
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from app.routers import data, commands
+from app import db
+from app.recorder import recorder
+from app.routers import data, commands, analytics
+
+
+# ── Lifespan ──────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Open the history database, then re-attach to whatever quota period was
+    open when the process last stopped.
+
+    The resume step matters more than it looks. Render's free tier restarts
+    the process on every deploy and after every cold start, and without it
+    each restart would orphan the open period row and begin a new one —
+    turning a single 24-hour period into a handful of short fictional ones
+    and quietly wrecking the adherence statistic.
+
+    Neither call raises. If DATABASE_URL is unset or Supabase is unreachable,
+    db.init_db() logs and disables itself, and the backend serves the live
+    dashboard exactly as it did before this feature existed.
+    """
+    await db.init_db()
+    await recorder.resume()
+    yield
+    await db.close_db()
+
 
 # ── App instance ──────────────────────────────────────────────
 app = FastAPI(
+    lifespan=lifespan,
     title="EnergyGuard API",
     description=(
         "IoT Energy Management System backend.\n\n"
@@ -36,6 +65,7 @@ app = FastAPI(
         "- **Dashboard** connects to `/api/data/ws` for live WebSocket feed\n"
         "- **Dashboard** posts commands to `/api/commands`\n"
         "- **ESP32** polls `/api/commands` every 1s to collect pending commands\n"
+        "- **Dashboard** reads `/api/analytics/*` for the History tab\n"
     ),
     version="1.0.0",
     contact={
@@ -57,6 +87,7 @@ app.add_middleware(
 # ── Routers ───────────────────────────────────────────────────
 app.include_router(data.router)
 app.include_router(commands.router)
+app.include_router(analytics.router)
 
 # ── Serve static dashboard files ──────────────────────────────
 # If a 'static' folder exists next to this file, serve it.
@@ -85,4 +116,10 @@ async def health():
         "has_data": not store.is_empty,
         "pending_commands": len(store.command_queue),
         "history_size": len(store.history),
+        # Reported plainly rather than folded into "status". The backend is
+        # healthy with the database down — that is the whole design — but you
+        # still need one place to see that history is not being written, or a
+        # bad DATABASE_URL looks exactly like a working deployment until you
+        # open the History tab a week later and find it empty.
+        "database": db.enabled(),
     }

@@ -14,7 +14,7 @@
          cache for hours after a deploy. That is how a PC ends up rendering
          old CSS against new markup while a phone that never cached it renders
          correctly. Bump this number on every CSS change. -->
-    <link rel="stylesheet" href="/static/style.css?v=2" />
+    <link rel="stylesheet" href="/static/style.css?v=3" />
   </head>
   <body>
     <header>
@@ -33,8 +33,20 @@
     </header>
 
     <main>
+      <!-- VIEW SWITCHER -->
+      <!-- Sits in <main> rather than the header: the header is already three
+           items wide and wraps on a phone at 720px. -->
+      <div class="view-tabs">
+        <button class="view-tab active" id="tabLive" onclick="setView('live')">
+          LIVE
+        </button>
+        <button class="view-tab" id="tabHistory" onclick="setView('history')">
+          HISTORY
+        </button>
+      </div>
+
       <!-- SHEDDING BANNER -->
-      <div class="shedding-banner" id="sheddingBanner">
+      <div class="shedding-banner live-only" id="sheddingBanner">
         <span class="shed-icon">⚠</span>
         <span
           >AUTOMATIC LOAD SHEDDING ACTIVE — CONSUMPTION RATE EXCEEDS SUSTAINABLE
@@ -43,7 +55,7 @@
       </div>
 
       <!-- TOP STATS -->
-      <div class="stats-row">
+      <div class="stats-row live-only">
         <div class="stat-card amber">
           <div class="stat-label">Total Active Power</div>
           <div class="stat-value" id="totalPower">--</div>
@@ -67,7 +79,7 @@
       </div>
 
       <!-- QUOTA BAR -->
-      <div class="quota-section">
+      <div class="quota-section live-only">
         <div class="quota-header">
           <div>
             <div class="quota-title">Energy Quota Status</div>
@@ -119,7 +131,7 @@
       </div>
 
       <!-- MAIN GRID -->
-      <div class="main-grid">
+      <div class="main-grid live-only">
         <div class="left-panel">
           <!-- LOAD CHANNELS -->
           <div class="channels-section">
@@ -477,6 +489,173 @@
           </div>
         </div>
       </div>
+      <!-- ═══════════════════ HISTORY VIEW ═══════════════════ -->
+      <!-- Everything below is served from Postgres via /api/analytics/*, not
+           from the WebSocket. It is deliberately fetch-on-demand rather than
+           live: these are questions about weeks, and re-querying them every
+           two seconds would spend Supabase egress to redraw an identical
+           chart. -->
+      <section id="viewHistory">
+        <div class="hist-toolbar">
+          <div class="hist-range">
+            <span class="hist-range-label">WINDOW</span>
+            <button class="range-btn" onclick="setRange(7)" data-days="7">
+              7D
+            </button>
+            <button class="range-btn active" onclick="setRange(30)" data-days="30">
+              30D
+            </button>
+            <button class="range-btn" onclick="setRange(90)" data-days="90">
+              90D
+            </button>
+          </div>
+          <div class="hist-status" id="histStatus">Loading…</div>
+          <button class="apply-btn hist-refresh" onclick="loadHistory()">
+            ↻ REFRESH
+          </button>
+        </div>
+
+        <!-- Shown only when the meter recorded energy the backend was not
+             running to witness. Silence here means the totals below are
+             complete; it is not decoration. -->
+        <div class="hist-warn" id="histWarn"></div>
+
+        <div class="stats-row">
+          <div class="stat-card green">
+            <div class="stat-label">Energy Recorded</div>
+            <div class="stat-value" id="histEnergy">--</div>
+            <div class="stat-unit">KWH</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Cost Accrued</div>
+            <div class="stat-value" id="histCost">--</div>
+            <div class="stat-unit">NAIRA</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Quota Adherence</div>
+            <div class="stat-value" id="histAdherence">--</div>
+            <div class="stat-unit" id="histAdherenceSub">PERIODS WITHIN BUDGET</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Days With Data</div>
+            <div class="stat-value" id="histDays">--</div>
+            <div class="stat-unit" id="histCoverage">COVERAGE</div>
+          </div>
+        </div>
+
+        <div class="chart-section hist-card">
+          <div class="section-header">
+            <span class="section-title">Daily Consumption By Channel</span>
+            <span class="section-badge" id="histDailyBadge">--</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-canvas-wrap hist-canvas-wrap">
+              <canvas id="dailyChart"></canvas>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #3ddc84"></div>
+                Lighting
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #f5a623"></div>
+                Fan/TV
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #4fc3f7"></div>
+                Air Conditioner
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-section hist-card">
+          <div class="section-header">
+            <span class="section-title">Average Load By Hour Of Day</span>
+            <span class="section-badge" id="histProfileBadge">--</span>
+          </div>
+          <div class="chart-body">
+            <div class="chart-canvas-wrap hist-canvas-wrap">
+              <canvas id="profileChart"></canvas>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #3ddc84"></div>
+                Lighting
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #f5a623"></div>
+                Fan/TV
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: #4fc3f7"></div>
+                Air Conditioner
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hist-grid">
+          <div class="hist-card">
+            <div class="section-header">
+              <span class="section-title">Load Shedding Activity</span>
+            </div>
+            <div class="hist-table-wrap">
+              <table class="hist-table" id="shedTable">
+                <thead>
+                  <tr>
+                    <th>Channel</th>
+                    <th>Episodes</th>
+                    <th>Shed Hours</th>
+                    <th>Energised Hours</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="hist-card">
+            <div class="section-header">
+              <span class="section-title">Completed Quota Periods</span>
+            </div>
+            <div class="hist-table-wrap">
+              <table class="hist-table" id="periodTable">
+                <thead>
+                  <tr>
+                    <th>Ended</th>
+                    <th>Quota</th>
+                    <th>Used</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="hist-card">
+          <div class="section-header">
+            <span class="section-title">Event History</span>
+            <span class="section-badge" id="histEventBadge">--</span>
+          </div>
+          <div class="hist-table-wrap tall">
+            <table class="hist-table" id="eventTable">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Source</th>
+                  <th>Event</th>
+                  <th>Channel</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -1278,6 +1457,381 @@
         log.insertBefore(item, log.firstChild);
         if (log.children.length > 20) log.removeChild(log.lastChild);
       }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // HISTORY VIEW
+      // ═══════════════════════════════════════════════════════════════════════
+      // Reads /api/analytics/*, which reads Postgres. Entirely separate from
+      // the live WebSocket path above: nothing here can stall a frame, and
+      // nothing above depends on any of it existing.
+
+      const HIST_COLORS = ["#3ddc84", "#f5a623", "#4fc3f7"]; // matches live chart
+      let historyDays = 30;
+      let historyLoaded = false;
+      let histDailyRows = [];
+      let histProfileRows = [];
+
+      function setView(v) {
+        const isHist = v === "history";
+        document.body.classList.toggle("view-history", isHist);
+        document.getElementById("tabLive").classList.toggle("active", !isHist);
+        document.getElementById("tabHistory").classList.toggle("active", isHist);
+        // A canvas in a display:none subtree measures 0x0, so both directions
+        // need a re-fit after the switch — otherwise whichever chart was
+        // hidden at page load renders into a zero-width backing store and
+        // stays blank until the window happens to be resized.
+        requestAnimationFrame(() => {
+          if (isHist) {
+            drawDailyChart();
+            drawProfileChart();
+          } else {
+            resizeCanvas();
+          }
+        });
+        if (isHist && !historyLoaded) loadHistory();
+      }
+
+      function setRange(days) {
+        historyDays = days;
+        document.querySelectorAll(".range-btn").forEach((b) => {
+          b.classList.toggle("active", Number(b.dataset.days) === days);
+        });
+        loadHistory();
+      }
+
+      // Generic DPR-aware fit. Returns null when the canvas has no laid-out
+      // size yet, so every caller must handle a null and simply not draw.
+      function fitCanvas(cv) {
+        const wrap = cv.parentElement;
+        if (!wrap) return null;
+        const W = wrap.clientWidth;
+        const H = wrap.clientHeight;
+        if (W <= 0 || H <= 0) return null;
+        const dpr = window.devicePixelRatio || 1;
+        cv.width = Math.max(1, Math.round(W * dpr));
+        cv.height = Math.max(1, Math.round(H * dpr));
+        const c = cv.getContext("2d");
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        c.clearRect(0, 0, W, H);
+        return { ctx: c, W, H };
+      }
+
+      function histNote(msg, isError) {
+        const el = document.getElementById("histStatus");
+        el.textContent = msg;
+        el.classList.toggle("error", !!isError);
+      }
+
+      async function loadHistory() {
+        histNote("Loading…");
+        try {
+          const q = `?days=${historyDays}`;
+          const [summary, daily, profile, shed, periods, events] =
+            await Promise.all([
+              fetch(`${API_URL}/api/analytics/summary${q}`),
+              fetch(`${API_URL}/api/analytics/daily${q}`),
+              fetch(`${API_URL}/api/analytics/profile${q}`),
+              fetch(`${API_URL}/api/analytics/shedding${q}`),
+              fetch(`${API_URL}/api/analytics/periods${q}&limit=20`),
+              fetch(`${API_URL}/api/analytics/events${q}&limit=100`),
+            ]);
+
+          // 503 is the backend saying the history database is not configured.
+          // That is a different thing from "no energy was used", and it gets a
+          // different message rather than an empty chart.
+          if (summary.status === 503) {
+            const body = await summary.json().catch(() => ({}));
+            histNote(body.detail || "History database not configured.", true);
+            return;
+          }
+          if (!summary.ok) throw new Error(`HTTP ${summary.status}`);
+
+          renderSummary(await summary.json());
+          histDailyRows = (await daily.json()).rows || [];
+          histProfileRows = (await profile.json()).rows || [];
+          renderShedding((await shed.json()).rows || []);
+          renderPeriods((await periods.json()).rows || []);
+          renderEvents((await events.json()).rows || []);
+          drawDailyChart();
+          drawProfileChart();
+
+          historyLoaded = true;
+          histNote(`Updated ${new Date().toLocaleTimeString("en-GB")}`);
+        } catch (err) {
+          histNote(`Could not load history: ${err.message}`, true);
+        }
+      }
+
+      function renderSummary(s) {
+        document.getElementById("histEnergy").textContent = (
+          s.energy_kwh ?? 0
+        ).toFixed(2);
+        document.getElementById("histCost").textContent = Math.round(
+          s.cost_ngn ?? 0,
+        ).toLocaleString();
+
+        // Null adherence means no period has both started and finished under
+        // observation. Showing 0% or 100% there would be inventing a result.
+        const adEl = document.getElementById("histAdherence");
+        const adSub = document.getElementById("histAdherenceSub");
+        if (s.adherence_pct === null || s.adherence_pct === undefined) {
+          adEl.textContent = "—";
+          adSub.textContent = "NO COMPLETED PERIOD YET";
+        } else {
+          adEl.textContent = s.adherence_pct.toFixed(0) + "%";
+          adSub.textContent = `${s.periods_within}/${s.periods_closed} PERIODS WITHIN BUDGET`;
+        }
+
+        document.getElementById("histDays").textContent = s.days_with_data ?? 0;
+        document.getElementById("histCoverage").textContent =
+          `OF ${s.days_requested} DAYS REQUESTED`;
+
+        const warn = document.getElementById("histWarn");
+        const gap = s.unattributed_kwh ?? 0;
+        if (gap > 0.001) {
+          warn.textContent =
+            `⚠ ${gap.toFixed(2)} kWh was measured by the meter while this ` +
+            `server was offline. It is counted nowhere in the charts below, ` +
+            `because the time it was used is unknown.`;
+          warn.classList.add("visible");
+        } else {
+          warn.classList.remove("visible");
+        }
+      }
+
+      function renderShedding(rows) {
+        const tb = document.querySelector("#shedTable tbody");
+        tb.innerHTML = "";
+        if (!rows.length) {
+          tb.innerHTML = `<tr><td colspan="4" class="hist-empty">No shedding recorded in this window.</td></tr>`;
+          return;
+        }
+        rows.forEach((r) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${CHANNEL_NAMES[r.ch] ?? r.name ?? "CH" + r.ch}</td>
+            <td>${r.episodes ?? 0}</td>
+            <td class="${r.shed_hours > 0 ? "hist-hot" : ""}">${(r.shed_hours ?? 0).toFixed(2)}</td>
+            <td>${(r.on_hours ?? 0).toFixed(2)}</td>`;
+          tb.appendChild(tr);
+        });
+      }
+
+      function renderPeriods(rows) {
+        const tb = document.querySelector("#periodTable tbody");
+        tb.innerHTML = "";
+        if (!rows.length) {
+          tb.innerHTML = `<tr><td colspan="4" class="hist-empty">No quota period completed within this window.</td></tr>`;
+          return;
+        }
+        rows.forEach((r) => {
+          const tr = document.createElement("tr");
+          const used = r.energy_kwh ?? 0;
+          const quota = r.quota_kwh ?? 0;
+          // A period the backend joined halfway through has a truncated energy
+          // figure. It is marked rather than hidden, and rather than presented
+          // as if it were a clean measurement.
+          const partial = r.witnessed_start
+            ? ""
+            : ` <span class="hist-flag" title="Backend started mid-period — energy is truncated">PARTIAL</span>`;
+          const verdict = !r.witnessed_start
+            ? `<span class="hist-dim">n/a</span>`
+            : r.within_quota
+              ? `<span class="hist-ok">WITHIN</span>`
+              : `<span class="hist-hot">OVER</span>`;
+          tr.innerHTML = `
+            <td>${r.ended_at ? new Date(r.ended_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}${partial}</td>
+            <td>${quota.toFixed(2)}</td>
+            <td>${used.toFixed(2)}</td>
+            <td>${verdict}</td>`;
+          tb.appendChild(tr);
+        });
+      }
+
+      function renderEvents(rows) {
+        const tb = document.querySelector("#eventTable tbody");
+        tb.innerHTML = "";
+        document.getElementById("histEventBadge").textContent =
+          `${rows.length} EVENTS`;
+        if (!rows.length) {
+          tb.innerHTML = `<tr><td colspan="5" class="hist-empty">No events recorded in this window.</td></tr>`;
+          return;
+        }
+        rows.forEach((r) => {
+          const tr = document.createElement("tr");
+          const when = new Date(r.ts);
+          const src =
+            r.source === "user"
+              ? `<span class="hist-src user">USER</span>`
+              : `<span class="hist-src dev">DEVICE</span>`;
+          tr.innerHTML = `
+            <td class="hist-mono">${when.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} ${when.toLocaleTimeString("en-GB")}</td>
+            <td>${src}</td>
+            <td class="hist-mono">${r.kind}</td>
+            <td>${r.ch === null || r.ch === undefined ? "—" : (CHANNEL_NAMES[r.ch] ?? "CH" + r.ch)}</td>
+            <td class="hist-mono">${r.value === null || r.value === undefined ? "—" : Number(r.value).toFixed(2)}</td>`;
+          tb.appendChild(tr);
+        });
+      }
+
+      // ─── DAILY STACKED BARS ───────────────────────────────────────────────
+      function drawDailyChart() {
+        const cv = document.getElementById("dailyChart");
+        const f = fitCanvas(cv);
+        if (!f) return;
+        const { ctx: c, W, H } = f;
+
+        // Days with no recorded data are absent from the API response and stay
+        // absent here — no zero bar is drawn for them, because a zero bar
+        // claims the household used nothing, which is not what was measured.
+        const byDay = new Map();
+        histDailyRows.forEach((r) => {
+          if (!byDay.has(r.day)) byDay.set(r.day, [0, 0, 0]);
+          byDay.get(r.day)[r.ch] = r.kwh || 0;
+        });
+        const days = [...byDay.keys()].sort();
+        document.getElementById("histDailyBadge").textContent =
+          days.length ? `${days.length} DAYS` : "NO DATA";
+        if (!days.length) {
+          c.fillStyle = "#6b7a79";
+          c.font = "11px 'Share Tech Mono', monospace";
+          c.textAlign = "center";
+          c.fillText("No recorded days in this window", W / 2, H / 2);
+          return;
+        }
+
+        const PAD_L = 34, PAD_B = 22, PAD_T = 8;
+        const plotW = Math.max(1, W - PAD_L);
+        const plotH = Math.max(1, H - PAD_B - PAD_T);
+        const totals = days.map((d) =>
+          byDay.get(d).reduce((a, b) => a + b, 0),
+        );
+        const maxKwh = Math.max(...totals, 0.001) * 1.1;
+
+        c.strokeStyle = "#1e2828";
+        c.fillStyle = "#6b7a79";
+        c.font = "9px 'Share Tech Mono', monospace";
+        c.lineWidth = 1;
+        c.textAlign = "right";
+        for (let g = 0; g <= 4; g++) {
+          const y = PAD_T + (plotH / 4) * g;
+          c.beginPath();
+          c.moveTo(PAD_L, y);
+          c.lineTo(W, y);
+          c.stroke();
+          c.fillText((maxKwh * (1 - g / 4)).toFixed(1), PAD_L - 5, y + 3);
+        }
+
+        const slot = plotW / days.length;
+        const barW = Math.max(2, Math.min(28, slot * 0.6));
+        days.forEach((d, i) => {
+          const vals = byDay.get(d);
+          const x = PAD_L + slot * i + (slot - barW) / 2;
+          let yCursor = PAD_T + plotH;
+          vals.forEach((v, ch) => {
+            const h = (v / maxKwh) * plotH;
+            if (h <= 0) return;
+            c.fillStyle = HIST_COLORS[ch];
+            c.fillRect(x, yCursor - h, barW, h);
+            yCursor -= h;
+          });
+          // Label density is capped so dates never overprint each other on a
+          // 90-day window or a narrow phone.
+          const step = Math.ceil(days.length / Math.max(1, Math.floor(W / 62)));
+          if (i % step === 0) {
+            c.fillStyle = "#6b7a79";
+            c.textAlign = "center";
+            c.fillText(d.slice(5), x + barW / 2, H - 7);
+          }
+        });
+      }
+
+      // ─── HOUR-OF-DAY PROFILE ──────────────────────────────────────────────
+      function drawProfileChart() {
+        const cv = document.getElementById("profileChart");
+        const f = fitCanvas(cv);
+        if (!f) return;
+        const { ctx: c, W, H } = f;
+
+        const series = [new Array(24).fill(null), new Array(24).fill(null), new Array(24).fill(null)];
+        histProfileRows.forEach((r) => {
+          if (r.ch >= 0 && r.ch < 3 && r.hour >= 0 && r.hour < 24)
+            series[r.ch][r.hour] = r.watts_avg || 0;
+        });
+        const seen = new Set(histProfileRows.map((r) => r.hour));
+        document.getElementById("histProfileBadge").textContent =
+          seen.size ? `${seen.size}/24 HOURS OBSERVED` : "NO DATA";
+        if (!seen.size) {
+          c.fillStyle = "#6b7a79";
+          c.font = "11px 'Share Tech Mono', monospace";
+          c.textAlign = "center";
+          c.fillText("Not enough history yet for a daily profile", W / 2, H / 2);
+          return;
+        }
+
+        const PAD_L = 40, PAD_B = 22, PAD_T = 8;
+        const plotW = Math.max(1, W - PAD_L);
+        const plotH = Math.max(1, H - PAD_B - PAD_T);
+        const maxW =
+          Math.max(
+            ...series.flat().filter((v) => v !== null),
+            1,
+          ) * 1.15;
+
+        c.strokeStyle = "#1e2828";
+        c.lineWidth = 1;
+        c.font = "9px 'Share Tech Mono', monospace";
+        c.textAlign = "right";
+        for (let g = 0; g <= 4; g++) {
+          const y = PAD_T + (plotH / 4) * g;
+          c.beginPath();
+          c.moveTo(PAD_L, y);
+          c.lineTo(W, y);
+          c.stroke();
+          c.fillStyle = "#6b7a79";
+          c.fillText(Math.round(maxW * (1 - g / 4)) + "W", PAD_L - 5, y + 3);
+        }
+        c.textAlign = "center";
+        for (let h = 0; h < 24; h += 3) {
+          c.fillStyle = "#6b7a79";
+          c.fillText(
+            String(h).padStart(2, "0"),
+            PAD_L + (plotW / 23) * h,
+            H - 7,
+          );
+        }
+
+        // An unobserved hour breaks the line rather than being bridged. A
+        // continuous curve through a gap is a claim about load nobody measured.
+        series.forEach((data, ch) => {
+          c.strokeStyle = HIST_COLORS[ch];
+          c.lineWidth = 1.8;
+          let drawing = false;
+          c.beginPath();
+          data.forEach((v, h) => {
+            if (v === null) {
+              drawing = false;
+              return;
+            }
+            const x = PAD_L + (plotW / 23) * h;
+            const y = PAD_T + plotH - (v / maxW) * plotH;
+            if (!drawing) {
+              c.moveTo(x, y);
+              drawing = true;
+            } else {
+              c.lineTo(x, y);
+            }
+          });
+          c.stroke();
+        });
+      }
+
+      window.addEventListener("resize", () => {
+        if (document.body.classList.contains("view-history")) {
+          drawDailyChart();
+          drawProfileChart();
+        }
+      });
 
       // ─── BOOT ─────────────────────────────────────────────────────────────────────
       addAlert("info", "System initialised. Attempting backend connection...");
