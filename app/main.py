@@ -65,7 +65,7 @@ app = FastAPI(
         "- **Dashboard** connects to `/api/data/ws` for live WebSocket feed\n"
         "- **Dashboard** posts commands to `/api/commands`\n"
         "- **ESP32** polls `/api/commands` every 1s to collect pending commands\n"
-        "- **Dashboard** reads `/api/analytics/*` for the History tab\n"
+        "- **Dashboard** reads `/api/history/*` for the History tab\n"
     ),
     version="1.0.0",
     contact={

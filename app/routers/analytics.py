@@ -47,7 +47,22 @@ from fastapi import APIRouter, HTTPException, Query
 from app import db
 from app.recorder import BUCKET_SECONDS
 
-router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
+# ── Route prefix ──────────────────────────────────────────────
+# /api/history, NOT /api/analytics — and this is not a cosmetic preference.
+#
+# uBlock Origin, AdBlock Plus, Brave shields and most other content blockers
+# ship EasyList rules that match any request path containing "analytics". The
+# browser cancels the request before it is sent, so the dashboard's fetch()
+# rejects with a bare "Failed to fetch" — no status code, nothing in the Render
+# log, and the backend looks broken while being perfectly healthy. It presents
+# as "works in Firefox, fails in Chrome", which is a miserable thing to debug
+# and worse to hit in front of an examiner running an ad blocker.
+#
+# Nothing here is analytics in the tracking sense — it is the user's own
+# household energy history — but the blocklists match on the URL string, not on
+# intent. Do not rename this back. The same applies to "tracking", "telemetry",
+# "stats", "collect" and "beacon" if these routes are ever extended.
+router = APIRouter(prefix="/api/history", tags=["History"])
 
 # Two buckets are "adjacent" when they are one bucket apart, so the outage
 # threshold has to be expressed in multiples of BUCKET_SECONDS, not as a fixed
@@ -118,7 +133,7 @@ WITH raw AS (
 """
 
 
-# ── GET /api/analytics/summary ────────────────────────────────
+# ── GET /api/history/summary ────────────────────────────────
 @router.get("/summary", summary="Headline figures for the History tab")
 async def summary(days: int = Query(30, ge=1, le=365)):
     """
@@ -198,7 +213,7 @@ async def summary(days: int = Query(30, ge=1, le=365)):
     }
 
 
-# ── GET /api/analytics/daily ──────────────────────────────────
+# ── GET /api/history/daily ──────────────────────────────────
 @router.get("/daily", summary="Energy per day, split by channel")
 async def daily(days: int = Query(30, ge=1, le=365)):
     """
@@ -226,7 +241,7 @@ async def daily(days: int = Query(30, ge=1, le=365)):
     return {"timezone": db.LOCAL_TZ, "count": len(rows), "rows": _rows(rows)}
 
 
-# ── GET /api/analytics/profile ────────────────────────────────
+# ── GET /api/history/profile ────────────────────────────────
 @router.get("/profile", summary="Average load by hour of day")
 async def profile(days: int = Query(7, ge=1, le=365)):
     """
@@ -256,7 +271,7 @@ async def profile(days: int = Query(7, ge=1, le=365)):
     return {"timezone": db.LOCAL_TZ, "count": len(rows), "rows": _rows(rows)}
 
 
-# ── GET /api/analytics/shedding ───────────────────────────────
+# ── GET /api/history/shedding ───────────────────────────────
 @router.get("/shedding", summary="Load-shedding activity per channel")
 async def shedding(days: int = Query(30, ge=1, le=365)):
     """
@@ -305,7 +320,7 @@ async def shedding(days: int = Query(30, ge=1, le=365)):
     return {"count": len(out), "rows": out}
 
 
-# ── GET /api/analytics/periods ────────────────────────────────
+# ── GET /api/history/periods ────────────────────────────────
 @router.get("/periods", summary="Completed quota periods")
 async def periods(days: int = Query(30, ge=1, le=365),
                   limit: int = Query(20, ge=1, le=200)):
@@ -337,7 +352,7 @@ async def periods(days: int = Query(30, ge=1, le=365),
     return {"count": len(rows), "rows": _rows(rows)}
 
 
-# ── GET /api/analytics/events ─────────────────────────────────
+# ── GET /api/history/events ─────────────────────────────────
 @router.get("/events", summary="Recent system and user events")
 async def events(days: int = Query(7, ge=1, le=365),
                  limit: int = Query(100, ge=1, le=500),
@@ -369,7 +384,7 @@ async def events(days: int = Query(7, ge=1, le=365),
     return {"count": len(rows), "rows": _rows(rows)}
 
 
-# ── GET /api/analytics/uptime ─────────────────────────────────
+# ── GET /api/history/uptime ─────────────────────────────────
 @router.get("/uptime", summary="Recording coverage per day")
 async def uptime(days: int = Query(30, ge=1, le=365)):
     """

@@ -490,7 +490,7 @@
         </div>
       </div>
       <!-- ═══════════════════ HISTORY VIEW ═══════════════════ -->
-      <!-- Everything below is served from Postgres via /api/analytics/*, not
+      <!-- Everything below is served from Postgres via /api/history/*, not
            from the WebSocket. It is deliberately fetch-on-demand rather than
            live: these are questions about weeks, and re-querying them every
            two seconds would spend Supabase egress to redraw an identical
@@ -1461,7 +1461,7 @@
       // ═══════════════════════════════════════════════════════════════════════
       // HISTORY VIEW
       // ═══════════════════════════════════════════════════════════════════════
-      // Reads /api/analytics/*, which reads Postgres. Entirely separate from
+      // Reads /api/history/*, which reads Postgres. Entirely separate from
       // the live WebSocket path above: nothing here can stall a frame, and
       // nothing above depends on any of it existing.
 
@@ -1528,12 +1528,12 @@
           const q = `?days=${historyDays}`;
           const [summary, daily, profile, shed, periods, events] =
             await Promise.all([
-              fetch(`${API_URL}/api/analytics/summary${q}`),
-              fetch(`${API_URL}/api/analytics/daily${q}`),
-              fetch(`${API_URL}/api/analytics/profile${q}`),
-              fetch(`${API_URL}/api/analytics/shedding${q}`),
-              fetch(`${API_URL}/api/analytics/periods${q}&limit=20`),
-              fetch(`${API_URL}/api/analytics/events${q}&limit=100`),
+              fetch(`${API_URL}/api/history/summary${q}`),
+              fetch(`${API_URL}/api/history/daily${q}`),
+              fetch(`${API_URL}/api/history/profile${q}`),
+              fetch(`${API_URL}/api/history/shedding${q}`),
+              fetch(`${API_URL}/api/history/periods${q}&limit=20`),
+              fetch(`${API_URL}/api/history/events${q}&limit=100`),
             ]);
 
           // 503 is the backend saying the history database is not configured.
