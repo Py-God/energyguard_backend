@@ -15,7 +15,8 @@ Matches the ESP32 payload from wifi_comms.cpp:
 {
   "v": 220.1,
   "ch": [
-    {"name":"Medical/Fridge","i":0.68,"p":150,"e":0.042,"on":1,"shed":0,"prio":1},
+    {"name":"Refrigeration","i":0.68,"p":150,"e":0.042,"on":1,"shed":0,
+     "prio":1,"prot":1,"crit":1},
     ...
   ],
   "te": 0.123,  "tc": 27.6,  "qr": 4.877,
@@ -38,7 +39,23 @@ class ChannelReading(BaseModel):
     e:     float = Field(...,  description="Cumulative energy (kWh)")
     on:    int   = Field(...,  description="1 = energised, 0 = off")
     shed:  int   = Field(...,  description="1 = auto-shed active on this channel")
-    prio:  int   = Field(...,  description="Priority: 1=HIGH, 2=MEDIUM, 3=LOW")
+    # `prio` carries RANK: a permutation of 1..NUM_CHANNELS across the channel
+    # array, where 1 is shed LAST and NUM_CHANNELS is shed FIRST. It replaced a
+    # three-valued HIGH/MEDIUM/LOW enum without a key rename, because the
+    # Supabase `prio` column and every row already in it key off this name.
+    #
+    # ⚠ The VALUE semantics changed even though the name did not. Rows written
+    # before the firmware that made priority user-editable mean HIGH/MEDIUM/LOW;
+    # rows after mean rank. Both are small positive integers and nothing in the
+    # data distinguishes them, so evaluation queries spanning the changeover
+    # need the cutover timestamp applied by hand.
+    prio:  int   = Field(...,  description="Shed rank: 1 = shed last, N = shed first")
+
+    # Optional so the backend keeps validating payloads from firmware that
+    # predates runtime-editable priorities — server and device are deployed
+    # separately and one is always older for a while.
+    prot:  Optional[int] = Field(None, description="1 = protected; auto-shed will never open it")
+    crit:  Optional[int] = Field(None, description="1 = critical load; un-protecting warrants confirmation")
 
 
 # ── Full sensor payload (POST /api/data from ESP32) ────────────
@@ -66,6 +83,10 @@ class SensorPayload(BaseModel):
     hl:    Optional[float]     = Field(None, description="Hours left in period")
     ar:    Optional[int]       = Field(None, description="1 = auto-renew at deadline")
     ck:    Optional[int]       = Field(None, description="1 = wall clock synced (NTP)")
+    # Count of channels auto-shed is permitted to open. 0 is legal, not an
+    # error: the user may protect everything, in which case shedding cannot
+    # comply with the quota and the dashboard says so.
+    sh:    Optional[int]       = Field(None, description="Number of sheddable (unprotected) channels")
 
 
 # ── Enriched reading stored in memory (adds server timestamp) ─
@@ -112,6 +133,34 @@ class AutoShedCommand(BaseModel):
     val: int = Field(..., ge=0, le=1, description="1=enable, 0=disable")
 
 
+class PriorityCommand(BaseModel):
+    """Move one channel to a given position in the shed order.
+
+    ONE MOVE PER COMMAND, deliberately. The firmware derives every other
+    channel's new rank from this single move and so keeps the ordering a valid
+    permutation of 1..N by construction. Shipping the whole ordering as an
+    array would make a partially delivered ordering representable — and the
+    command path is a fire-and-forget queue over a link that drops things.
+    """
+    cmd: Literal['prio']
+    ch:  int = Field(..., ge=0, le=3, description="Channel index 0-3")
+    val: int = Field(..., ge=1, le=4,
+                     description="Target rank: 1 = shed last (most important), 4 = shed first")
+
+
+class ProtectCommand(BaseModel):
+    """Exempt a channel from auto-shedding entirely, or stop exempting it.
+
+    Orthogonal to rank: a protected channel keeps its rank, which is what it
+    will use if protection is later removed. Nothing here refuses to
+    un-protect a critical load — the `crit` flag drives a confirmation and a
+    standing warning in the dashboard, not a veto in the firmware.
+    """
+    cmd: Literal['protect']
+    ch:  int = Field(..., ge=0, le=3, description="Channel index 0-3")
+    val: int = Field(..., ge=0, le=1, description="1=protected, 0=sheddable")
+
+
 class ResetEnergyCommand(BaseModel):
     # cmd: str = "reset_energy"
     cmd: Literal['reset_energy']
@@ -119,7 +168,8 @@ class ResetEnergyCommand(BaseModel):
 
 # Union type for the command queue
 CommandPayload = (ToggleCommand | QuotaCommand | TopUpCommand
-                  | AutoRenewCommand | AutoShedCommand | ResetEnergyCommand)
+                  | AutoRenewCommand | AutoShedCommand | PriorityCommand
+                  | ProtectCommand | ResetEnergyCommand)
 
 
 # ── API response wrappers ──────────────────────────────────────

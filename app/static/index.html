@@ -146,7 +146,7 @@
                 <div class="channel-indicator on" id="ch1-ind"></div>
                 <div>
                   <div class="channel-name">Lighting Circuit</div>
-                  <span class="channel-priority high">HIGH</span>
+                  <span class="channel-priority" id="ch1-prio">--</span>
                 </div>
               </div>
               <div>
@@ -195,7 +195,7 @@
                 <div class="channel-indicator on" id="ch2-ind"></div>
                 <div>
                   <div class="channel-name">Fan / TV</div>
-                  <span class="channel-priority medium">MEDIUM</span>
+                  <span class="channel-priority" id="ch2-prio">--</span>
                 </div>
               </div>
               <div>
@@ -244,7 +244,7 @@
                 <div class="channel-indicator on" id="ch3-ind"></div>
                 <div>
                   <div class="channel-name">Air Conditioner</div>
-                  <span class="channel-priority low">LOW</span>
+                  <span class="channel-priority" id="ch3-prio">--</span>
                 </div>
               </div>
               <div>
@@ -293,7 +293,7 @@
                 <div class="channel-indicator on" id="ch4-ind"></div>
                 <div>
                   <div class="channel-name">Refrigeration</div>
-                  <span class="channel-priority high">HIGH</span>
+                  <span class="channel-priority" id="ch4-prio">--</span>
                 </div>
               </div>
               <div>
@@ -404,6 +404,28 @@
               <div class="pred-row">
                 <span class="pred-key">Auto Shed Status</span>
                 <span class="pred-val" id="shedStatus">STANDBY</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SHED ORDER -->
+          <!-- Listed by rank, NOT by channel index: the order of these rows is
+               the answer to "what gets shed first?", so sorting them any other
+               way would make the panel decorative. The channel cards above stay
+               in index order because their element ids and the chart series are
+               keyed to it. -->
+          <div class="settings-card">
+            <div class="section-header">
+              <span class="section-title">Shed Order</span>
+              <span class="section-badge" id="sheddableCount">--</span>
+            </div>
+            <div class="settings-body">
+              <div class="order-list" id="orderList"></div>
+              <div class="order-warn crit" id="critWarn"></div>
+              <div class="order-warn none-sheddable" id="noShedWarn">
+                EVERY CHANNEL IS PROTECTED — AUTO-SHED CANNOT REDUCE LOAD AND THE
+                QUOTA WILL BE OVERRUN. UNPROTECT AT LEAST ONE CHANNEL TO RESTORE
+                AUTOMATIC CONTROL.
               </div>
             </div>
           </div>
@@ -719,6 +741,21 @@
       </section>
     </main>
 
+    <!-- Un-protecting a critical load is allowed, but never by accident. The
+         firmware does not veto it — a setting the device silently refuses to
+         honour is worse than no setting — so the guard lives here, as informed
+         consent rather than prohibition. -->
+    <div class="confirm-backdrop" id="confirmBackdrop">
+      <div class="confirm-box">
+        <div class="confirm-title" id="confirmTitle">Confirm</div>
+        <div class="confirm-body" id="confirmBody"></div>
+        <div class="confirm-actions">
+          <button id="confirmCancel" onclick="closeConfirm()">CANCEL</button>
+          <button class="danger" id="confirmOk">CONFIRM</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       // ═══════════════════════════════════════════════════════════════════════════════
       // CONFIG — change SERVER_HOST to your PC's local IP when running the backend
@@ -739,12 +776,19 @@
       const CHANNEL_NAMES = ["Lighting", "Fan/TV", "Air Conditioner", "Refrigeration"];
 
       // ─── STATE ────────────────────────────────────────────────────────────────────
+      // rank/prot/crit start null, not at the firmware defaults. They are DEVICE
+      // state — the user may have reordered the queue in a previous session and
+      // the device restored that from NVS at boot — so seeding plausible values
+      // here would draw a shed order the device does not necessarily hold, and
+      // the panel would look authoritative while being a guess. Null renders as
+      // "--" until the first frame says otherwise.
       let channels = [
-        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // Lighting  (HIGH)
-        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // Fan/TV    (MEDIUM)
-        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // A/C       (LOW)
-        { on: true, power: 0, current: 0, energy: 0, shedding: false }, // Fridge    (HIGH)
+        { on: true, power: 0, current: 0, energy: 0, shedding: false, rank: null, prot: null, crit: false }, // Lighting
+        { on: true, power: 0, current: 0, energy: 0, shedding: false, rank: null, prot: null, crit: false }, // Fan/TV
+        { on: true, power: 0, current: 0, energy: 0, shedding: false, rank: null, prot: null, crit: false }, // A/C
+        { on: true, power: 0, current: 0, energy: 0, shedding: false, rank: null, prot: null, crit: false }, // Fridge
       ];
+      let sheddableCount = null;   // device d.sh — 0 is legal and means "cannot comply"
       let voltage = 220;
       let quotaKwh = 5;      // THIS period's credit (device d.q) — grows on top-up
       let renewKwh = 5;      // nominal purchase (device d.rq) — auto-renew refills here
@@ -771,6 +815,46 @@
       const desired = [null, null, null, null]; // last commanded on-state, per channel
       const cmdTime = [0, 0, 0, 0]; // ms timestamp the command was sent
       const CONFIRM_TIMEOUT = 10000; // give up waiting after 10s, then trust device
+
+      // ── Ordering-command reconciliation ──────────────────────────────────────────
+      // Same discipline as `desired`, and needed for the same reason: a reorder
+      // takes a full round trip (queue -> ESP32 poll ~1s -> NVS -> next POST ~2s
+      // -> WS), and during that window the device is still reporting the OLD
+      // order. Without this the list would visibly snap back for two seconds
+      // after every tap, which reads as "the button did nothing" and invites the
+      // user to tap again — producing a second move they did not intend.
+      //
+      // A whole-array snapshot rather than one flag per channel, because a single
+      // move changes several channels' ranks at once: showing the moved channel
+      // optimistically while its neighbours still hold device values would draw
+      // an ordering with duplicates in it.
+      let desiredOrder = null;     // [rank per channel] awaiting confirmation
+      let orderCmdTime = 0;
+      const desiredProt = [null, null, null, null];
+      const protCmdTime = [0, 0, 0, 0];
+
+      // Predicting the result locally, rather than waiting for the device, means
+      // this mirror of Channels_SetRank must stay identical to the firmware's.
+      // If they ever disagree the reconciler below still converges on the device
+      // — the device is authoritative — but the intermediate frame would be a lie.
+      function predictReorder(ranks, chIndex, newRank) {
+        const oldRank = ranks[chIndex];
+        if (newRank < 1) newRank = 1;
+        if (newRank > ranks.length) newRank = ranks.length;
+        if (oldRank === newRank) return null;
+        const next = ranks.slice();
+        for (let i = 0; i < ranks.length; i++) {
+          if (i === chIndex) continue;
+          const r = ranks[i];
+          if (oldRank < newRank) {
+            if (r > oldRank && r <= newRank) next[i] = r - 1;
+          } else {
+            if (r >= newRank && r < oldRank) next[i] = r + 1;
+          }
+        }
+        next[chIndex] = newRank;
+        return next;
+      }
 
       const chartData = {
         ch1: new Array(CHART_POINTS).fill(0), // Lighting
@@ -972,8 +1056,67 @@
             channels[i].current = c.i ?? 0;
             channels[i].power = c.p ?? 0;
             channels[i].energy = c.e ?? channels[i].energy;
+
+            // crit is a hardware fact the device reports; it never changes at
+            // runtime and there is nothing to reconcile.
+            if (c.crit != null) channels[i].crit = c.crit === 1;
+
+            // ── Protection reconciliation ──────────────────────────────────
+            // Per channel, unlike rank: protecting one channel does not move
+            // any other, so a single flag is enough.
+            const reportedProt = c.prot != null ? c.prot === 1 : null;
+            if (reportedProt === null) {
+              channels[i].prot = null;         // firmware predates the field
+            } else if (desiredProt[i] === null) {
+              channels[i].prot = reportedProt;
+            } else if (reportedProt === desiredProt[i]) {
+              channels[i].prot = reportedProt;
+              desiredProt[i] = null;
+            } else if (Date.now() - protCmdTime[i] > CONFIRM_TIMEOUT) {
+              channels[i].prot = reportedProt;
+              addAlert(
+                "warn",
+                CHANNEL_NAMES[i] +
+                  " protection did not confirm — showing actual state (" +
+                  (reportedProt ? "PROTECTED" : "SHEDDABLE") +
+                  ")",
+              );
+              desiredProt[i] = null;
+            } else {
+              channels[i].prot = desiredProt[i];
+            }
           });
+
+          // ── Rank reconciliation, across the whole array at once ───────────
+          // Compared as a set, not per channel: a reorder is one logical change
+          // spread over several ranks, so it is confirmed only when EVERY rank
+          // matches what we predicted. Accepting it channel-by-channel would
+          // let a half-applied frame through and draw a duplicate position.
+          const reported = channels.map((_, i) => d.ch[CH_MAP[i]]?.prio ?? null);
+          const haveAll = reported.every((r) => r != null);
+          if (!haveAll) {
+            // Firmware predates rank reporting — leave the panel blank rather
+            // than inventing an order for it.
+            channels.forEach((ch) => (ch.rank = null));
+            desiredOrder = null;
+          } else if (desiredOrder === null) {
+            reported.forEach((r, i) => (channels[i].rank = r));
+          } else if (desiredOrder.every((r, i) => r === reported[i])) {
+            reported.forEach((r, i) => (channels[i].rank = r));
+            desiredOrder = null;
+          } else if (Date.now() - orderCmdTime > CONFIRM_TIMEOUT) {
+            reported.forEach((r, i) => (channels[i].rank = r));
+            addAlert("warn", "Shed order did not confirm — showing device order.");
+            desiredOrder = null;
+          } else {
+            desiredOrder.forEach((r, i) => (channels[i].rank = r));
+          }
         }
+
+        // Sheddable count comes from the device rather than being counted from
+        // the prot flags locally, so the "nothing can be shed" warning agrees
+        // with what the firmware itself decided.
+        sheddableCount = d.sh != null ? d.sh : null;
 
         // Shedding banner — driven by ESP32 state, not recalculated here
         const shed = d.shed === 1;
@@ -1150,6 +1293,160 @@
         });
         document.getElementById("activeCount").textContent =
           activeCount + " ACTIVE";
+        renderOrderPanel();
+      }
+
+      // ─── SHED ORDER PANEL ─────────────────────────────────────────────────────────
+      // Rebuilt from scratch each frame rather than diffed. The list is four rows
+      // of static markup; rebuilding is simpler than tracking which row moved,
+      // and at 0.5 Hz the cost is irrelevant. The one thing it must not do is
+      // rebuild while the user is mid-interaction — see the focus restore below.
+      function renderOrderPanel() {
+        const list = document.getElementById("orderList");
+        if (!list) return;
+
+        // Which control had focus before the rebuild? Reordering with the
+        // keyboard means pressing the same button repeatedly, and a blind
+        // rebuild would drop focus after the first press.
+        const focusId = document.activeElement ? document.activeElement.id : null;
+
+        // Per-channel badges on the cards above, in index order.
+        channels.forEach((ch, i) => {
+          const badge = document.getElementById("ch" + (i + 1) + "-prio");
+          if (!badge) return;
+          if (ch.rank == null) {
+            badge.textContent = "--";
+            badge.className = "channel-priority";
+            return;
+          }
+          if (ch.prot) {
+            badge.textContent = "PROTECTED";
+            badge.className = "channel-priority protected";
+          } else if (ch.crit) {
+            // A critical load left in the queue. Says the position AND why the
+            // badge is shouting, because this is a state the user opted into
+            // and should not be able to overlook later.
+            badge.textContent = "SHED #" + (channels.length - ch.rank + 1) + " ⚠ CRITICAL";
+            badge.className = "channel-priority crit-open";
+          } else {
+            badge.textContent = "SHED #" + (channels.length - ch.rank + 1);
+            badge.className = "channel-priority r" + ch.rank;
+          }
+        });
+
+        const known = channels.every((c) => c.rank != null);
+        if (!known) {
+          list.innerHTML =
+            '<div class="order-sub">AWAITING DEVICE — SHED ORDER NOT YET REPORTED</div>';
+          document.getElementById("sheddableCount").textContent = "--";
+          document.getElementById("critWarn").classList.remove("visible");
+          document.getElementById("noShedWarn").classList.remove("visible");
+          return;
+        }
+
+        // Sorted by rank descending: the channel that goes FIRST sits at the top,
+        // because that is the question the panel exists to answer.
+        const byShedOrder = channels
+          .map((ch, i) => ({ ch, i }))
+          .sort((a, b) => b.ch.rank - a.ch.rank);
+
+        // Queue positions are numbered over the SHEDDABLE rows only. A protected
+        // channel keeps its rank and its place in the list — that rank is what it
+        // resumes using if protection is lifted — but printing "3" beside it
+        // would claim it is third in a queue it is not standing in.
+        list.innerHTML = "";
+        let queuePos = 0;
+        byShedOrder.forEach((entry, pos) => {
+          const { ch, i } = entry;
+          if (!ch.prot) queuePos++;
+          const row = document.createElement("div");
+          row.className =
+            "order-row" +
+            (ch.prot ? " is-protected" : "") +
+            (ch.shedding ? " is-shed" : "");
+
+          // Kept short: .order-name clips its children, and the shield button
+          // beside it already says PROTECTED, so repeating the word here only
+          // costs the width that pushed this line into an ellipsis.
+          const sub = ch.prot
+            ? "NEVER AUTO-SHED"
+            : ch.shedding
+              ? "CURRENTLY SHED"
+              : "RANK " + ch.rank;
+
+          row.innerHTML =
+            '<div class="order-pos">' + (ch.prot ? "—" : queuePos) + "</div>" +
+            '<div class="order-name">' +
+            CHANNEL_NAMES[i] +
+            '<span class="order-sub">' + sub + "</span></div>" +
+            '<div class="order-moves">' +
+            '<button class="order-btn" id="ord-up-' + i + '" title="Shed earlier"' +
+            (pos === 0 ? " disabled" : "") + ">▲</button>" +
+            '<button class="order-btn" id="ord-dn-' + i + '" title="Shed later"' +
+            (pos === byShedOrder.length - 1 ? " disabled" : "") + ">▼</button>" +
+            "</div>" +
+            '<button class="order-shield ' +
+            (ch.prot ? "on" : ch.crit ? "crit-open" : "") +
+            '" id="ord-sh-' + i + '">' +
+            (ch.prot ? "PROTECTED" : "SHEDDABLE") +
+            "</button>";
+
+          // Listeners attached in JS rather than inline onclick, because the row
+          // markup is built from channel names that are device-supplied strings.
+          const up = row.querySelector("#ord-up-" + i);
+          const dn = row.querySelector("#ord-dn-" + i);
+          // ▲ = shed EARLIER = a HIGHER rank number. The arrow follows the list,
+          // which is sorted first-to-last, so up on screen is up the queue.
+          up.onclick = () => moveChannel(i, +1);
+          dn.onclick = () => moveChannel(i, -1);
+          row.querySelector("#ord-sh-" + i).onclick = () => toggleProtect(i);
+          list.appendChild(row);
+        });
+
+        // Restore focus if the control still exists after the rebuild. It may
+        // not: a channel that reached the top loses its ▲ to `disabled`.
+        if (focusId) {
+          const again = document.getElementById(focusId);
+          if (again && !again.disabled) again.focus();
+        }
+
+        // Counted from LOCAL state, not from the device's `sh`, so the badge and
+        // the rows beneath it are always describing the same thing. During the
+        // round trip after a protect the rows show the user's intent while the
+        // device still reports the old count, and a badge sourced from `sh`
+        // would visibly contradict the list right above it.
+        //
+        // `sh` is not wasted: once nothing is in flight the two must agree, and
+        // a disagreement means the local prot flags have drifted from the
+        // device's. That is a real defect rather than a transient, so it goes to
+        // the console — not to the alert log, which the user cannot act on.
+        const nShed = channels.filter((c) => c.prot === false).length;
+        const settled = desiredProt.every((d) => d === null);
+        if (settled && sheddableCount != null && sheddableCount !== nShed) {
+          console.warn(
+            "Sheddable count disagrees with device: local " + nShed +
+              " vs device " + sheddableCount + " — protection flags have drifted.",
+          );
+        }
+        document.getElementById("sheddableCount").textContent =
+          nShed + " SHEDDABLE";
+
+        // Standing warnings, not alerts. An alert scrolls out of the log; both
+        // of these describe a configuration that stays true until changed.
+        const openCrit = channels
+          .map((c, i) => (c.crit && c.prot === false ? CHANNEL_NAMES[i] : null))
+          .filter(Boolean);
+        const critEl = document.getElementById("critWarn");
+        critEl.classList.toggle("visible", openCrit.length > 0);
+        if (openCrit.length) {
+          critEl.textContent =
+            "⚠ " + openCrit.join(", ").toUpperCase() +
+            " IS UNPROTECTED. IF THE QUOTA RUNS LOW IT WILL BE SWITCHED OFF. " +
+            "FOOD SPOILS, AND THE COMPRESSOR RUNS HARDER ON RESTORE.";
+        }
+        document
+          .getElementById("noShedWarn")
+          .classList.toggle("visible", nShed === 0);
       }
 
       // ─── CHART BACKFILL FROM HISTORY ──────────────────────────────────────────────
@@ -1234,7 +1531,23 @@
           ch.power = 0;
           ch.current = 0;
           ch.shedding = false;
+          // Rank and protection go back to unknown for the same reason the
+          // readings do. They are the device's settings, not the browser's, and
+          // a shed order left on screen through an outage is a claim we cannot
+          // support — the device may have been reconfigured from the LCD, or
+          // rebooted onto a different stored order, while we were not looking.
+          ch.rank = null;
+          ch.prot = null;
         });
+        sheddableCount = null;
+        // Any reorder still in flight is abandoned rather than left pending: it
+        // was queued on a backend that may have cold-started and dropped it, and
+        // silently waiting would leave the panel showing an order nothing
+        // confirmed. The next live frame re-establishes the truth.
+        desiredOrder = null;
+        for (let i = 0; i < desiredProt.length; i++) desiredProt[i] = null;
+        renderOrderPanel();
+        closeConfirm();
 
         dash("totalPower", "--");
         dash("mainVoltage", "--");
@@ -1417,6 +1730,121 @@
           CHANNEL_NAMES[i] + " turned " + (ch.on ? "ON" : "OFF"),
         );
       }
+
+      // ─── REORDER / PROTECT ────────────────────────────────────────────────────────
+      // `delta` is a step in the shed QUEUE, not in rank: +1 means "shed one
+      // place earlier", which is a higher rank number. Callers say what the user
+      // meant; the rank arithmetic stays in here.
+      function moveChannel(i, delta) {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — cannot change shed order.");
+          return;
+        }
+        const cur = channels.map((c) => c.rank);
+        if (cur.some((r) => r == null)) return;
+
+        // Only one reorder in flight at a time. Firing a second before the first
+        // confirms would compute the move against a predicted order the device
+        // has not adopted yet, and if the first command were dropped the second
+        // would land on a different starting state than the user saw.
+        if (desiredOrder !== null) {
+          addAlert("info", "Shed order change already in flight — waiting for device.");
+          return;
+        }
+
+        const target = cur[i] + delta;
+        if (target < 1 || target > cur.length) return;
+
+        const next = predictReorder(cur, i, target);
+        if (!next) return;
+
+        desiredOrder = next;
+        orderCmdTime = Date.now();
+        next.forEach((r, k) => (channels[k].rank = r));
+        renderOrderPanel();
+
+        sendCommand({ cmd: "prio", ch: CH_MAP[i], val: target });
+        addAlert(
+          "info",
+          CHANNEL_NAMES[i] + " moved to shed position " +
+            (cur.length - target + 1) + " — awaiting device.",
+        );
+      }
+
+      function toggleProtect(i) {
+        if (!isLiveMode) {
+          addAlert("warn", "Offline — cannot change protection.");
+          return;
+        }
+        if (channels[i].prot == null) return;
+        const next = !channels[i].prot;
+
+        // Un-protecting a critical load is permitted, but not silently. The
+        // firmware deliberately does not veto this — a setting the device
+        // refuses to honour is worse than no setting — so the guard is a
+        // confirmation here, and a standing warning afterwards.
+        if (!next && channels[i].crit) {
+          openConfirm(
+            "Un-protect " + CHANNEL_NAMES[i] + "?",
+            CHANNEL_NAMES[i] +
+              " is a critical load. Once it is sheddable, auto-shed may switch it " +
+              "off when the quota runs low — and unlike a fan or a light, that does " +
+              "not defer consumption. Food spoils, and the compressor then works " +
+              "harder on restore to recover the temperature, so part of the saving " +
+              "is repaid with interest. You can protect it again at any time.",
+            () => applyProtect(i, false),
+          );
+          return;
+        }
+        applyProtect(i, next);
+      }
+
+      function applyProtect(i, next) {
+        desiredProt[i] = next;
+        protCmdTime[i] = Date.now();
+        channels[i].prot = next;   // optimistic; reconciled in applyLiveData
+        renderOrderPanel();
+        sendCommand({ cmd: "protect", ch: CH_MAP[i], val: next ? 1 : 0 });
+        addAlert(
+          next ? "info" : "warn",
+          CHANNEL_NAMES[i] +
+            (next ? " protected from auto-shed" : " is now SHEDDABLE") +
+            " — awaiting device.",
+        );
+      }
+
+      // ─── CONFIRMATION DIALOG ──────────────────────────────────────────────────────
+      let confirmAction = null;
+
+      function openConfirm(title, body, onOk) {
+        document.getElementById("confirmTitle").textContent = title;
+        document.getElementById("confirmBody").textContent = body;
+        confirmAction = onOk;
+        document.getElementById("confirmBackdrop").classList.add("visible");
+        // Focus lands on CANCEL, not CONFIRM: this dialog exists because the
+        // action is destructive, so a stray Enter must not perform it.
+        document.getElementById("confirmCancel").focus();
+      }
+
+      function closeConfirm() {
+        document.getElementById("confirmBackdrop").classList.remove("visible");
+        confirmAction = null;
+      }
+
+      document.getElementById("confirmOk").onclick = () => {
+        const act = confirmAction;
+        closeConfirm();
+        if (act) act();
+      };
+
+      document.getElementById("confirmBackdrop").onclick = (e) => {
+        // Backdrop click cancels; clicks inside the box must not.
+        if (e.target.id === "confirmBackdrop") closeConfirm();
+      };
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeConfirm();
+      });
 
       function toggleAutoShed() {
         if (!isLiveMode) {

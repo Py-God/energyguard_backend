@@ -28,19 +28,21 @@ from app.models.schemas import (
     TopUpCommand,
     AutoRenewCommand,
     AutoShedCommand,
+    PriorityCommand,
+    ProtectCommand,
     ResetEnergyCommand,
     CommandListResponse,
     StatusResponse,
 )
-from app.recorder import recorder
 from app.store import store
 
 router = APIRouter(prefix="/api/commands", tags=["Commands"])
 
-# Discriminated union so FastAPI shows all 6 variants in /docs
+# Discriminated union so FastAPI shows all 8 variants in /docs
 AnyCommand = Annotated[
     Union[ToggleCommand, QuotaCommand, TopUpCommand,
-          AutoRenewCommand, AutoShedCommand, ResetEnergyCommand],
+          AutoRenewCommand, AutoShedCommand, PriorityCommand,
+          ProtectCommand, ResetEnergyCommand],
     Field(discriminator="cmd")
 ]
 
@@ -55,7 +57,7 @@ async def enqueue_command(command: AnyCommand):
     ```json
     {"cmd": "toggle", "ch": 3, "val": 0}
     ```
-    ch is 0-indexed (0=CH1 Medical, 1=CH2 Lights, 2=CH3 Fan/TV, 3=CH4 AC)
+    ch is 0-indexed (0=CH1 Lighting, 1=CH2 Fan/TV, 2=CH3 A/C, 3=CH4 Refrigeration)
 
     **Update the budget (edits the running period):**
     ```json
@@ -81,19 +83,30 @@ async def enqueue_command(command: AnyCommand):
     {"cmd": "autoshed", "val": 1}
     ```
 
+    **Reorder the shed queue:**
+    ```json
+    {"cmd": "prio", "ch": 2, "val": 1}
+    ```
+    Moves one channel to rank `val`; the firmware shifts the others so the set
+    stays a permutation of 1..4. Rank 1 is shed LAST, rank 4 is shed FIRST.
+    Send one of these per move, not four to describe one reorder — a single
+    move cannot be partially delivered.
+
+    **Exempt a channel from auto-shedding:**
+    ```json
+    {"cmd": "protect", "ch": 3, "val": 1}
+    ```
+    Independent of rank. A protected channel keeps its position in the queue
+    and resumes using it if protection is removed. Un-protecting a channel the
+    firmware reports as `crit` is permitted — the dashboard confirms first and
+    then warns for as long as it stays that way.
+
     **Reset all energy counters:**
     ```json
     {"cmd": "reset_energy"}
     ```
     """
-    payload = command.model_dump()
-    store.enqueue_command(payload)
-    # Logged as source='user': this records that the API ACCEPTED the
-    # instruction, not that the ESP32 carried it out. The device-sourced event
-    # written when the change shows up in telemetry is the evidence. Keeping
-    # both is what makes a command that never took effect visible in the
-    # history instead of invisible.
-    recorder.note_command(payload)
+    store.enqueue_command(command.model_dump())
     return StatusResponse(
         status="queued",
         message=f"Command '{command.cmd}' queued. Will be delivered on next ESP32 poll."

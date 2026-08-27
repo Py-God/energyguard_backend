@@ -1,2 +1,2 @@
 /.venv/
-energyguard_database.patch
+*.patch

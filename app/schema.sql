@@ -22,9 +22,18 @@
 CREATE TABLE IF NOT EXISTS samples (
     ts          TIMESTAMPTZ NOT NULL,   -- bucket start, UTC, server clock
     device_id   TEXT        NOT NULL,
-    ch          SMALLINT    NOT NULL,   -- 0=Lighting 1=Fan/TV 2=Air Conditioner
+    ch          SMALLINT    NOT NULL,   -- 0=Lighting 1=Fan/TV 2=A/C 3=Refrigeration
     name        TEXT        NOT NULL,   -- label as the firmware reported it
-    prio        SMALLINT    NOT NULL,   -- 1=HIGH 2=MEDIUM 3=LOW
+    -- Shed RANK as the firmware reported it: 1 = shed last, 4 = shed first,
+    -- and distinct across the four channels of any one bucket.
+    --
+    -- ⚠ SEMANTICS CHANGED WITHOUT THE COLUMN CHANGING. Rows written before
+    -- shed priority became user-editable hold the old three-valued enum
+    -- (1=HIGH 2=MEDIUM 3=LOW); rows after hold a rank. Both are small
+    -- integers, so no migration was needed and none is possible — nothing in
+    -- the data marks the boundary. Any query spanning it needs the cutover
+    -- timestamp supplied by hand.
+    prio        SMALLINT    NOT NULL,
     watts_avg   REAL        NOT NULL,
     watts_peak  REAL        NOT NULL,
     amps_avg    REAL        NOT NULL,
