@@ -1,266 +1,320 @@
 :root {
---bg: #0d0f0f;
---surface: #141818;
---surface2: #1c2020;
---border: #2a3030;
---amber: #f5a623;
---amber-dim: #7a5212;
---green: #3ddc84;
---green-dim: #1a4035;
---red: #ff4d4d;
---red-dim: #4a1515;
---blue: #4fc3f7;
---blue-dim: #103a4a;
---text: #e8edec;
---text-dim: #6b7a79;
---text-mid: #a8b5b4;
---mono: 'Share Tech Mono', monospace;
---sans: 'Barlow', sans-serif;
---cond: 'Barlow Condensed', sans-serif;
+  --bg: #0d0f0f;
+  --surface: #141818;
+  --surface2: #1c2020;
+  --border: #2a3030;
+  --amber: #f5a623;
+  --amber-dim: #7a5212;
+  --green: #3ddc84;
+  --green-dim: #1a4035;
+  --red: #ff4d4d;
+  --red-dim: #4a1515;
+  --blue: #4fc3f7;
+  --blue-dim: #103a4a;
+  --text: #e8edec;
+  --text-dim: #6b7a79;
+  --text-mid: #a8b5b4;
+  --mono: "Share Tech Mono", monospace;
+  --sans: "Barlow", sans-serif;
+  --cond: "Barlow Condensed", sans-serif;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
-background: var(--bg);
-color: var(--text);
-font-family: var(--sans);
-min-height: 100vh;
-background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 39px, #1a2020 39px, #1a2020 40px),
-    repeating-linear-gradient(90deg, transparent, transparent 39px, #1a2020 39px, #1a2020 40px);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      #1a2020 39px,
+      #1a2020 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      #1a2020 39px,
+      #1a2020 40px
+    );
 }
 
 /* HEADER */
 header {
-background: var(--surface);
-border-bottom: 1px solid var(--border);
-padding: 0 24px;
-height: 56px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-position: sticky;
-top: 0;
-z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-display: flex;
-align-items: center;
-gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .logo-icon {
-width: 28px; height: 28px;
-background: var(--amber);
-clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-display: flex; align-items: center; justify-content: center;
-font-size: 11px; font-weight: 700; color: #000;
+  width: 28px;
+  height: 28px;
+  background: var(--amber);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #000;
 }
 
 .logo-text {
-font-family: var(--cond);
-font-size: 20px;
-font-weight: 700;
-letter-spacing: 2px;
-color: var(--text);
+  font-family: var(--cond);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text);
 }
 
-.logo-text span { color: var(--amber); }
+.logo-text span {
+  color: var(--amber);
+}
 
 .header-right {
-display: flex;
-align-items: center;
-gap: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .status-pill {
-display: flex;
-align-items: center;
-gap: 6px;
-font-family: var(--mono);
-font-size: 11px;
-color: var(--text-mid);
-background: var(--surface2);
-border: 1px solid var(--border);
-padding: 4px 10px;
-border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
 }
 
 .status-dot {
-width: 6px; height: 6px;
-border-radius: 50%;
-background: var(--green);
-box-shadow: 0 0 6px var(--green);
-animation: pulse 2s infinite;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .live-clock {
-font-family: var(--mono);
-font-size: 12px;
-color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
 }
 
 /* MAIN LAYOUT */
 main {
-padding: 20px 24px;
-max-width: 1400px;
-margin: 0 auto;
-display: grid;
-gap: 16px;
+  padding: 20px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
 }
 
 /* TOP STATS ROW */
 .stats-row {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
 .stat-card {
-background: var(--surface);
-border: 1px solid var(--border);
-padding: 16px 18px;
-position: relative;
-overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card::before {
-content: '';
-position: absolute;
-top: 0; left: 0; right: 0;
-height: 2px;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
 }
 
-.stat-card.amber::before { background: var(--amber); }
-.stat-card.green::before { background: var(--green); }
-.stat-card.red::before { background: var(--red); }
-.stat-card.blue::before { background: var(--blue); }
+.stat-card.amber::before {
+  background: var(--amber);
+}
+.stat-card.green::before {
+  background: var(--green);
+}
+.stat-card.red::before {
+  background: var(--red);
+}
+.stat-card.blue::before {
+  background: var(--blue);
+}
 
 .stat-label {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--text-dim);
-letter-spacing: 1.5px;
-text-transform: uppercase;
-margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .stat-value {
-font-family: var(--mono);
-font-size: 28px;
-font-weight: 400;
-line-height: 1;
-margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
-.stat-card.amber .stat-value { color: var(--amber); }
-.stat-card.green .stat-value { color: var(--green); }
-.stat-card.red .stat-value { color: var(--red); }
-.stat-card.blue .stat-value { color: var(--blue); }
+.stat-card.amber .stat-value {
+  color: var(--amber);
+}
+.stat-card.green .stat-value {
+  color: var(--green);
+}
+.stat-card.red .stat-value {
+  color: var(--red);
+}
+.stat-card.blue .stat-value {
+  color: var(--blue);
+}
 
 .stat-unit {
-font-family: var(--mono);
-font-size: 12px;
-color: var(--text-dim);
-margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
 }
 
 /* QUOTA BAR */
 .quota-section {
-background: var(--surface);
-border: 1px solid var(--border);
-padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
 }
 
 .quota-header {
-display: flex;
-justify-content: space-between;
-align-items: flex-start;
-margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
 }
 
 .quota-title {
-font-family: var(--cond);
-font-size: 13px;
-font-weight: 600;
-letter-spacing: 2px;
-color: var(--text-dim);
-text-transform: uppercase;
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .quota-meta {
-display: flex;
-gap: 24px;
-align-items: center;
+  display: flex;
+  gap: 24px;
+  align-items: center;
 }
 
 .quota-meta-item {
-text-align: right;
+  text-align: right;
 }
 
 .quota-meta-label {
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
-letter-spacing: 1px;
-text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .quota-meta-value {
-font-family: var(--mono);
-font-size: 16px;
-color: var(--text);
-margin-top: 1px;
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--text);
+  margin-top: 1px;
 }
 
-.quota-meta-value.warn { color: var(--amber); }
-.quota-meta-value.crit { color: var(--red); }
+.quota-meta-value.warn {
+  color: var(--amber);
+}
+.quota-meta-value.crit {
+  color: var(--red);
+}
 
 .quota-bar-track {
-background: var(--surface2);
-height: 10px;
-border: 1px solid var(--border);
-position: relative;
-overflow: hidden;
+  background: var(--surface2);
+  height: 10px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
 
 .quota-bar-fill {
-height: 100%;
-background: linear-gradient(90deg, var(--green), var(--amber));
-transition: width 1s ease;
-position: relative;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--amber));
+  transition: width 1s ease;
+  position: relative;
 }
 
 .quota-bar-fill::after {
-content: '';
-position: absolute;
-top: 0; right: 0; bottom: 0; width: 2px;
-background: white;
-opacity: 0.8;
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: white;
+  opacity: 0.8;
 }
 
 .quota-bar-fill.warn {
-background: linear-gradient(90deg, var(--amber), var(--red));
+  background: linear-gradient(90deg, var(--amber), var(--red));
 }
 
 .quota-bar-fill.crit {
-background: var(--red);
+  background: var(--red);
 }
 
 .quota-ticks {
-display: flex;
-justify-content: space-between;
-margin-top: 4px;
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
 }
 
 /* PACING HORIZON — deliberately a thinner, dimmer bar than .quota-bar-fill.
@@ -268,37 +322,37 @@ color: var(--text-dim);
    shed decision is the ratio between them, so they must not read as the same
    measurement drawn twice. */
 .period-row {
-display: flex;
-align-items: center;
-gap: 10px;
-margin-top: 10px;
-flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .period-label {
-font-family: var(--mono);
-font-size: 9px;
-letter-spacing: 1px;
-color: var(--text-dim);
-white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .period-bar-track {
-flex: 1;
-min-width: 80px;
-height: 8px;
-background: var(--surface2);
-border: 1px solid var(--border);
-border-radius: 4px;
-overflow: hidden;
+  flex: 1;
+  min-width: 80px;
+  height: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .period-bar-fill {
-height: 100%;
-width: 0%;
-background: var(--blue);
-box-shadow: 0 0 6px var(--blue);
-transition: width 0.4s ease;
+  height: 100%;
+  width: 0%;
+  background: var(--blue);
+  box-shadow: 0 0 6px var(--blue);
+  transition: width 0.4s ease;
 }
 
 /* Hidden until the device reports ck === 0. An unsynced clock means elapsed
@@ -306,19 +360,21 @@ transition: width 0.4s ease;
    last reboot — the user needs to know the pacing number is not trustworthy
    rather than reading it as fact. */
 .clock-warn {
-display: none;
-margin-top: 10px;
-padding: 6px 10px;
-border: 1px solid var(--amber);
-background: var(--amber-dim);
-border-radius: 3px;
-font-family: var(--mono);
-font-size: 9px;
-letter-spacing: 0.5px;
-color: var(--amber);
+  display: none;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--amber);
+  background: var(--amber-dim);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--amber);
 }
 
-.clock-warn.visible { display: block; }
+.clock-warn.visible {
+  display: block;
+}
 
 /* MAIN GRID */
 /* align-items was `start`, which let each column end at its own natural
@@ -327,112 +383,978 @@ color: var(--amber);
    the alert log on the right) makes them finish flush whichever one happens
    to be shorter, rather than only fixing the current content. */
 .main-grid {
-display: grid;
-grid-template-columns: 1fr 340px;
-gap: 16px;
-align-items: stretch;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: stretch;
 }
 
 .left-panel {
-display: flex;
-flex-direction: column;
-gap: 16px;
-min-width: 0;   /* without this the canvas floors the column width and the
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0; /* without this the canvas floors the column width and the
                    whole grid overflows horizontally instead of shrinking */
 }
 
 /* LOAD CHANNELS */
 .channels-section {
-background: var(--surface);
-border: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .section-header {
-padding: 14px 18px;
-border-bottom: 1px solid var(--border);
-display: flex;
-align-items: center;
-justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .section-title {
-font-family: var(--cond);
-font-size: 13px;
-font-weight: 600;
-letter-spacing: 2px;
-color: var(--text-dim);
-text-transform: uppercase;
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .section-badge {
-font-family: var(--mono);
-font-size: 10px;
-padding: 2px 8px;
-border: 1px solid var(--border);
-color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
 }
 
 /* CHANNEL ROWS */
 .channel-row {
-padding: 14px 18px;
-border-bottom: 1px solid var(--border);
-display: grid;
-grid-template-columns: 180px 1fr auto;
-gap: 16px;
-align-items: center;
-transition: background 0.2s;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  transition: background 0.2s;
 }
 
-.channel-row:last-child { border-bottom: none; }
-.channel-row:hover { background: var(--surface2); }
+.channel-row:last-child {
+  border-bottom: none;
+}
+.channel-row:hover {
+  background: var(--surface2);
+}
 
 .channel-row.off {
-opacity: 0.5;
+  opacity: 0.5;
 }
 
 .channel-left {
-display: flex;
-align-items: center;
-gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .channel-indicator {
-width: 10px; height: 10px;
-border-radius: 50%;
-flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .channel-indicator.on {
-background: var(--green);
-box-shadow: 0 0 8px var(--green);
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
 }
 
 .channel-indicator.off {
-background: var(--text-dim);
+  background: var(--text-dim);
 }
 
 .channel-indicator.shed {
-background: var(--amber);
-box-shadow: 0 0 8px var(--amber);
-animation: pulse 1s infinite;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: pulse 1s infinite;
 }
 
 .channel-name {
-font-family: var(--sans);
-font-size: 14px;
-font-weight: 600;
-color: var(--text);
-margin-bottom: 2px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
 }
 
 .channel-priority {
-font-family: var(--mono);
-font-size: 9px;
-letter-spacing: 1px;
-padding: 1px 5px;
-border-radius: 1px;
-text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+  border-radius: 1px;
+  text-transform: uppercase;
 }
+
+.channel-priority.high {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid var(--red-dim);
+}
+.channel-priority.medium {
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+}
+.channel-priority.low {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid var(--blue-dim);
+}
+
+.channel-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.metric-val {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.metric-unit {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+/* POWER BAR per channel */
+.power-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--surface2);
+  margin-top: 6px;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.power-bar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.8s ease;
+}
+
+/* CHANNEL TOGGLE */
+.toggle-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 5px 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.toggle-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* PREDICTION */
+.prediction-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.pred-body {
+  padding: 16px 18px;
+}
+
+.pred-countdown {
+  font-family: var(--mono);
+  font-size: 36px;
+  color: var(--amber);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.pred-countdown.crit {
+  color: var(--red);
+  animation: pulse 1s infinite;
+}
+.pred-countdown.safe {
+  color: var(--green);
+}
+
+.pred-sublabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.pred-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.pred-row:last-child {
+  border-bottom: none;
+}
+.pred-key {
+  color: var(--text-dim);
+}
+.pred-val {
+  color: var(--text);
+}
+.pred-val.warn {
+  color: var(--amber);
+}
+
+/* ALERTS LOG */
+.alerts-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* absorbs the slack when the RIGHT column is the short one */
+  min-height: 0;
+}
+
+.alert-log {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+}
+
+.alert-item {
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.alert-item:last-child {
+  border-bottom: none;
+}
+
+.alert-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  padding-top: 2px;
+  width: 50px;
+}
+
+.alert-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.alert-dot.info {
+  background: var(--blue);
+}
+.alert-dot.warn {
+  background: var(--amber);
+}
+.alert-dot.shed {
+  background: var(--red);
+}
+
+.alert-msg {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+
+/* QUOTA SETTINGS */
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.settings-body {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 8px;
+  width: 80px;
+  text-align: right;
+  outline: none;
+}
+
+.setting-input:focus {
+  border-color: var(--amber);
+}
+
+.setting-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 24px;
+}
+
+.apply-btn {
+  width: 100%;
+  background: var(--amber-dim);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.apply-btn:hover {
+  background: var(--amber);
+  color: #000;
+}
+
+/* WAVEFORM CHART */
+.chart-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* absorbs the slack when the LEFT column is the short one */
+  min-height: 0;
+}
+
+.chart-body {
+  padding: 12px 18px 16px;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The canvas is absolutely positioned inside this wrapper rather than being a
+   flex child itself. A canvas has an intrinsic size driven by its width/height
+   attributes, and those are exactly what the resize handler writes — as a flex
+   child it would feed its own measurement back into the layout and oscillate.
+   Taking it out of flow breaks that loop: the wrapper is measured, the canvas
+   just fills it. */
+.chart-canvas-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 120px;
+}
+
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* SHEDDING INDICATOR */
+.shedding-banner {
+  display: none;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-left: 4px solid var(--red);
+  padding: 10px 16px;
+  margin-bottom: 0;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--red);
+  letter-spacing: 1px;
+}
+
+.shedding-banner.visible {
+  display: flex;
+  animation: flashBorder 1s infinite;
+}
+
+@keyframes flashBorder {
+  0%,
+  100% {
+    border-color: var(--red);
+  }
+  50% {
+    border-color: var(--amber);
+  }
+}
+
+.shed-icon {
+  font-size: 16px;
+}
+
+/* CHART LEGEND */
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* CONNECTION TAG */
+.conn-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 8px;
+  letter-spacing: 1px;
+  border: 1px solid;
+  transition: all 0.4s;
+}
+.conn-tag.live {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.conn-tag.lost {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: var(--red);
+}
+.conn-tag.connecting {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   The layout was fixed-width: a 340px sidebar next to a 1fr column, four stat
+   cards across, and a 180px label column in every channel row. Below roughly
+   1024px that adds up to more than the viewport, so a phone rendered it
+   zoomed-out rather than reflowed. These are the only @media rules in the
+   file — everything above is the desktop case.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet / small laptop ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Single column means each panel is its own grid row at natural height, so
+     there is no slack for the chart or the log to absorb. Hand them back
+     explicit heights or the chart collapses to its 120px floor. */
+  .chart-section,
+  .alerts-card {
+    flex: 0 0 auto;
+  }
+
+  .chart-canvas-wrap {
+    min-height: 180px;
+  }
+
+  .alert-log {
+    max-height: 220px;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Large phone / small tablet ─────────────────────────────── */
+@media (max-width: 720px) {
+  main {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  header {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+
+  /* Channel rows were 180px | 1fr | auto. The fixed first track is wider than
+     half a phone screen, so the metrics get crushed to unreadable slivers
+     before anything wraps. Stacking keeps all four readings full width. */
+  .channel-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .channel-row .toggle-btn {
+    width: 100%;
+  }
+
+  .quota-header,
+  .quota-meta {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Comfortable touch targets — the desktop sizes are mouse-sized. */
+  .toggle-btn,
+  .apply-btn {
+    min-height: 34px;
+  }
+
+  .setting-input {
+    min-height: 30px;
+  }
+}
+
+/* ── Small phone ────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  main {
+    padding: 10px;
+  }
+
+  .stat-card {
+    padding: 12px 14px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .channel-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .section-header,
+  .channel-row,
+  .settings-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chart-body {
+    padding: 10px 14px 14px;
+  }
+
+  /* The two labels plus a usable bar do not fit on one line at this width.
+     Push the bar onto its own full-width line below them and spread the
+     labels to the edges, rather than letting the bar squeeze to a stub. */
+  .period-row {
+    justify-content: space-between;
+  }
+
+  .period-bar-track {
+    flex: 1 0 100%;
+    order: 3;
+  }
+
+  .live-clock {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEW SWITCHER + HISTORY VIEW
+   Added with the analytics database. The live dashboard answers "what is
+   happening now"; this answers "what has this household been doing", which
+   needs weeks of stored data and a different set of charts.
+   ═══════════════════════════════════════════════════════════════ */
+
+.view-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: var(--cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.view-tab:hover {
+  color: var(--text-mid);
+}
+
+.view-tab.active {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+
+/* Only one view is in the document flow at a time. The specificity here
+   (0,2,1) deliberately beats .shedding-banner.visible (0,2,0), so the
+   shedding banner cannot reappear over the history view when the ESP32
+   starts shedding while the user is reading last month's charts. */
+#viewHistory {
+  display: none;
+}
+body.view-history .live-only {
+  display: none;
+}
+body.view-history #viewHistory {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* TOOLBAR */
+.hist-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hist-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hist-range-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+.range-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.range-btn:hover {
+  border-color: var(--text-dim);
+  color: var(--text-mid);
+}
+
+.range-btn.active {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.hist-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-status.error {
+  color: var(--red);
+}
+
+.hist-refresh {
+  width: auto;
+  padding: 6px 14px;
+}
+
+/* The unattributed-energy notice. Hidden when there is nothing to disclose —
+   it must never become chrome the user learns to scroll past. */
+.hist-warn {
+  display: none;
+  background: var(--amber-dim);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 10px 14px;
+}
+
+.hist-warn.visible {
+  display: block;
+}
+
+/* CARDS */
+.hist-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* The two chart cards are flex:1 in the live layout so they can absorb column
+   slack. Here each is its own row at natural height, so that must be undone
+   or they collapse onto the 120px canvas floor. */
+.chart-section.hist-card {
+  flex: 0 0 auto;
+}
+
+.hist-canvas-wrap {
+  min-height: 220px;
+}
+
+.hist-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* TABLES */
+.hist-table-wrap {
+  overflow-x: auto;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.hist-table-wrap.tall {
+  max-height: 380px;
+}
+
+.hist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.hist-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--cond);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.hist-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
+  white-space: nowrap;
+}
+
+.hist-table tr:last-child td {
+  border-bottom: none;
+}
+.hist-table tbody tr:hover {
+  background: var(--surface2);
+}
+
+.hist-mono {
+  font-family: var(--mono);
+}
+.hist-hot {
+  color: var(--red);
+}
+.hist-ok {
+  color: var(--green);
+}
+.hist-dim {
+  color: var(--text-dim);
+}
+
+.hist-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 20px 14px !important;
+}
+
+.hist-src {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border: 1px solid;
+}
+
+.hist-src.dev {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.hist-src.user {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.hist-flag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  background: var(--amber-dim);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}
+
+@media (max-width: 1024px) {
+  .hist-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .view-tab {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+  .hist-toolbar {
+    gap: 10px;
+  }
+  .hist-status {
+    flex: 1 0 100%;
+    order: 3;
+  }
+  .hist-canvas-wrap {
+    min-height: 180px;
+  }
+  .hist-table th,
+  .hist-table td {
+    padding: 7px 10px;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENERGYGUARD — CONFIGURABLE SHED PRIORITY
+   Append this file to the END of the existing style.css. Nothing here
+   overrides an existing rule, so order within the file does not matter and
+   nothing already in the stylesheet is affected.
+
+   ⚠ WHY THIS IS AN APPENDED BLOCK AND NOT A REPLACEMENT style.css
+   The style.css checked into the project is a stale snapshot: it predates the
+   History view entirely and is missing 26 classes index.html actually uses
+   (.view-tabs, .view-tab, .live-only, .view-history, and the whole .hist-*
+   family). Shipping a rewritten style.css built on that base would have
+   deleted the live/history tab rules from the deployed stylesheet — which is
+   exactly the "history page is now on the same page as live page" symptom,
+   because .view-history .live-only { display: none } would no longer exist.
+
+   Appending sidesteps the problem completely: whatever stylesheet is actually
+   deployed keeps every rule it has, and only gains these.
+
+   NOT INCLUDED, DELIBERATELY: the old
+       .channel-priority.high / .medium / .low
+   rules. Nothing emits those class names any more — the badge now uses
+   .r1 .. .r4, .protected and .crit-open — so they are dead but completely
+   harmless. Removing them is optional tidying, not part of this change.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Rank badges. The old three classes mapped to a fixed HIGH/MEDIUM/LOW enum;
    there are now NUM_CHANNELS positions, so the colour runs cool (shed last) to
@@ -606,449 +1528,12 @@ color: var(--text-mid);
 
 .confirm-actions .danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 
-.channel-metrics {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 8px;
-}
-
-.metric {
-text-align: center;
-}
-
-.metric-label {
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
-letter-spacing: 1px;
-margin-bottom: 2px;
-}
-
-.metric-val {
-font-family: var(--mono);
-font-size: 14px;
-color: var(--text);
-}
-
-.metric-unit {
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
-margin-top: 1px;
-}
-
-/* POWER BAR per channel */
-.power-bar {
-width: 100%;
-height: 3px;
-background: var(--surface2);
-margin-top: 6px;
-border-radius: 0;
-overflow: hidden;
-}
-
-.power-bar-fill {
-height: 100%;
-background: var(--green);
-transition: width 0.8s ease;
-}
-
-/* CHANNEL TOGGLE */
-.toggle-btn {
-background: none;
-border: 1px solid var(--border);
-color: var(--text-dim);
-font-family: var(--mono);
-font-size: 10px;
-letter-spacing: 1px;
-padding: 5px 10px;
-cursor: pointer;
-text-transform: uppercase;
-transition: all 0.2s;
-}
-
-.toggle-btn:hover {
-border-color: var(--amber);
-color: var(--amber);
-}
-
-.toggle-btn.active {
-border-color: var(--green);
-color: var(--green);
-background: var(--green-dim);
-}
-
-/* RIGHT PANEL */
-.right-panel {
-display: flex;
-flex-direction: column;
-gap: 16px;
-min-width: 0;
-}
-
-/* PREDICTION */
-.prediction-card {
-background: var(--surface);
-border: 1px solid var(--border);
-}
-
-.pred-body {
-padding: 16px 18px;
-}
-
-.pred-countdown {
-font-family: var(--mono);
-font-size: 36px;
-color: var(--amber);
-line-height: 1;
-margin-bottom: 4px;
-}
-
-.pred-countdown.crit { color: var(--red); animation: pulse 1s infinite; }
-.pred-countdown.safe { color: var(--green); }
-
-.pred-sublabel {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--text-dim);
-letter-spacing: 1px;
-margin-bottom: 16px;
-}
-
-.pred-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 7px 0;
-border-bottom: 1px solid var(--border);
-font-family: var(--mono);
-font-size: 11px;
-}
-
-.pred-row:last-child { border-bottom: none; }
-.pred-key { color: var(--text-dim); }
-.pred-val { color: var(--text); }
-.pred-val.warn { color: var(--amber); }
-
-/* ALERTS LOG */
-.alerts-card {
-background: var(--surface);
-border: 1px solid var(--border);
-display: flex;
-flex-direction: column;
-flex: 1;          /* absorbs the slack when the RIGHT column is the short one */
-min-height: 0;
-}
-
-.alert-log {
-flex: 1;
-min-height: 120px;
-overflow-y: auto;
-}
-
-.alert-item {
-padding: 8px 18px;
-border-bottom: 1px solid var(--border);
-display: flex;
-gap: 10px;
-align-items: flex-start;
-}
-
-.alert-item:last-child { border-bottom: none; }
-
-.alert-time {
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
-flex-shrink: 0;
-padding-top: 2px;
-width: 50px;
-}
-
-.alert-dot {
-width: 6px; height: 6px;
-border-radius: 50%;
-flex-shrink: 0;
-margin-top: 4px;
-}
-
-.alert-dot.info { background: var(--blue); }
-.alert-dot.warn { background: var(--amber); }
-.alert-dot.shed { background: var(--red); }
-
-.alert-msg {
-font-family: var(--sans);
-font-size: 11px;
-color: var(--text-mid);
-line-height: 1.4;
-}
-
-/* QUOTA SETTINGS */
-.settings-card {
-background: var(--surface);
-border: 1px solid var(--border);
-}
-
-.settings-body {
-padding: 14px 18px;
-display: flex;
-flex-direction: column;
-gap: 12px;
-}
-
-.setting-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-
-.setting-label {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--text-dim);
-letter-spacing: 1px;
-}
-
-.setting-control {
-display: flex;
-align-items: center;
-gap: 6px;
-}
-
-.setting-input {
-background: var(--surface2);
-border: 1px solid var(--border);
-color: var(--text);
-font-family: var(--mono);
-font-size: 12px;
-padding: 4px 8px;
-width: 80px;
-text-align: right;
-outline: none;
-}
-
-.setting-input:focus {
-border-color: var(--amber);
-}
-
-.setting-unit {
-font-family: var(--mono);
-font-size: 10px;
-color: var(--text-dim);
-width: 24px;
-}
-
-.apply-btn {
-width: 100%;
-background: var(--amber-dim);
-border: 1px solid var(--amber);
-color: var(--amber);
-font-family: var(--mono);
-font-size: 11px;
-letter-spacing: 2px;
-padding: 8px;
-cursor: pointer;
-text-transform: uppercase;
-transition: all 0.2s;
-margin-top: 4px;
-}
-
-.apply-btn:hover {
-background: var(--amber);
-color: #000;
-}
-
-/* WAVEFORM CHART */
-.chart-section {
-background: var(--surface);
-border: 1px solid var(--border);
-display: flex;
-flex-direction: column;
-flex: 1;          /* absorbs the slack when the LEFT column is the short one */
-min-height: 0;
-}
-
-.chart-body {
-padding: 12px 18px 16px;
-position: relative;
-flex: 1;
-display: flex;
-flex-direction: column;
-min-height: 0;
-}
-
-/* The canvas is absolutely positioned inside this wrapper rather than being a
-   flex child itself. A canvas has an intrinsic size driven by its width/height
-   attributes, and those are exactly what the resize handler writes — as a flex
-   child it would feed its own measurement back into the layout and oscillate.
-   Taking it out of flow breaks that loop: the wrapper is measured, the canvas
-   just fills it. */
-.chart-canvas-wrap {
-flex: 1;
-position: relative;
-min-height: 120px;
-}
-
-canvas {
-position: absolute;
-inset: 0;
-width: 100% !important;
-height: 100% !important;
-display: block;
-}
-
-/* SHEDDING INDICATOR */
-.shedding-banner {
-display: none;
-background: var(--red-dim);
-border: 1px solid var(--red);
-border-left: 4px solid var(--red);
-padding: 10px 16px;
-margin-bottom: 0;
-align-items: center;
-gap: 12px;
-font-family: var(--mono);
-font-size: 11px;
-color: var(--red);
-letter-spacing: 1px;
-}
-
-.shedding-banner.visible {
-display: flex;
-animation: flashBorder 1s infinite;
-}
-
-@keyframes flashBorder {
-0%, 100% { border-color: var(--red); }
-50% { border-color: var(--amber); }
-}
-
-.shed-icon { font-size: 16px; }
-
-/* CHART LEGEND */
-.chart-legend {
-display: flex;
-gap: 16px;
-margin-bottom: 10px;
-}
-
-.legend-item {
-display: flex;
-align-items: center;
-gap: 5px;
-font-family: var(--mono);
-font-size: 9px;
-color: var(--text-dim);
-}
-
-.legend-dot {
-width: 8px; height: 2px;
-border-radius: 1px;
-}
-
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--border); }
-
-/* CONNECTION TAG */
-.conn-tag {
-font-family: var(--mono);
-font-size: 9px;
-padding: 2px 8px;
-letter-spacing: 1px;
-border: 1px solid;
-transition: all 0.4s;
-}
-.conn-tag.live       { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-.conn-tag.lost       { background: var(--red-dim); border-color: var(--red); color: var(--red); }
-.conn-tag.connecting { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
-
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE
-   The layout was fixed-width: a 340px sidebar next to a 1fr column, four stat
-   cards across, and a 180px label column in every channel row. Below roughly
-   1024px that adds up to more than the viewport, so a phone rendered it
-   zoomed-out rather than reflowed. These are the only @media rules in the
-   file — everything above is the desktop case.
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── Tablet / small laptop ──────────────────────────────────── */
-@media (max-width: 1024px) {
-  .main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* Single column means each panel is its own grid row at natural height, so
-     there is no slack for the chart or the log to absorb. Hand them back
-     explicit heights or the chart collapses to its 120px floor. */
-  .chart-section,
-  .alerts-card {
-    flex: 0 0 auto;
-  }
-
-  .chart-canvas-wrap {
-    min-height: 180px;
-  }
-
-  .alert-log {
-    max-height: 220px;
-  }
-
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* ── Large phone / small tablet ─────────────────────────────── */
-@media (max-width: 720px) {
-  main {
-    padding: 12px 14px;
-    gap: 12px;
-  }
-
-  header {
-    height: auto;
-    min-height: 56px;
-    padding: 8px 14px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .header-right {
-    gap: 12px;
-  }
-
-  /* Channel rows were 180px | 1fr | auto. The fixed first track is wider than
-     half a phone screen, so the metrics get crushed to unreadable slivers
-     before anything wraps. Stacking keeps all four readings full width. */
-  .channel-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .channel-row .toggle-btn {
-    width: 100%;
-  }
-
-  .quota-header,
-  .quota-meta {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .chart-legend {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  /* Comfortable touch targets — the desktop sizes are mouse-sized. */
-  .toggle-btn,
-  .apply-btn {
-    min-height: 34px;
-  }
-
-  /* Reorder controls are the smallest hit targets on the page and the ones
+/* ── Touch targets ───────────────────────────────────────────
+   A second @media block with the same breakpoint as the one already in the
+   stylesheet. CSS merges them, so this is equivalent to editing that block —
+   and it means this file never has to find a place inside it. */
+@media (max-width: 768px) {
+/* Reorder controls are the smallest hit targets on the page and the ones
      most likely to be mis-tapped into the wrong shed order. */
   .order-btn,
   .order-shield {
@@ -1059,56 +1544,5 @@ transition: all 0.4s;
   .order-row {
     grid-template-columns: 20px 1fr auto auto;
     gap: 6px;
-  }
-
-  .setting-input {
-    min-height: 30px;
-  }
-}
-
-/* ── Small phone ────────────────────────────────────────────── */
-@media (max-width: 430px) {
-  main {
-    padding: 10px;
-  }
-
-  .stat-card {
-    padding: 12px 14px;
-  }
-
-  .stat-value {
-    font-size: 22px;
-  }
-
-  .channel-metrics {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .section-header,
-  .channel-row,
-  .settings-body {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .chart-body {
-    padding: 10px 14px 14px;
-  }
-
-  /* The two labels plus a usable bar do not fit on one line at this width.
-     Push the bar onto its own full-width line below them and spread the
-     labels to the edges, rather than letting the bar squeeze to a stub. */
-  .period-row {
-    justify-content: space-between;
-  }
-
-  .period-bar-track {
-    flex: 1 0 100%;
-    order: 3;
-  }
-
-  .live-clock {
-    display: none;
   }
 }
