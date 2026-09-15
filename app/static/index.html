@@ -468,12 +468,12 @@
                 <span class="setting-label">AUTO SHED</span>
                 <div class="setting-control">
                   <button
-                    class="toggle-btn active"
+                    class="toggle-btn"
                     id="autoShedToggle"
                     onclick="toggleAutoShed()"
                     style="width: 60px"
                   >
-                    ON
+                    --
                   </button>
                 </div>
               </div>
@@ -801,7 +801,7 @@
       // the ck field entirely.
       let clockValid = true;
       let energyUsedTotal = 0;
-      let autoShed = true;
+      let autoShed = null;
       let isShedding = false;
       let isLiveMode = false; // true when WebSocket is connected & receiving
       let isConnecting = true; // WS handshake in progress — not yet offline
@@ -1012,7 +1012,8 @@
         if (d.rq != null) renewKwh     = d.rq;
         if (d.el != null) elapsedHours = d.el;
         if (d.hl != null) hoursLeft    = d.hl;
-        if (d.ar != null) autoRenew    = d.ar === 1;
+        if (d.ar   != null) autoRenew = d.ar   === 1;
+        if (d.auto != null) autoShed  = d.auto === 1;
         clockValid = d.ck != null ? d.ck === 1 : true;
         syncSettingInputs();
 
@@ -1230,6 +1231,17 @@
         const renewBtn = document.getElementById("autoRenewToggle");
         renewBtn.textContent = autoRenew ? "RENEW" : "CARRY";
         renewBtn.className = "toggle-btn" + (autoRenew ? " active" : "");
+
+        // null means the device has not told us yet. Distinct from false — the
+        // button must not assert a state it has never been informed of.
+        const shedBtn = document.getElementById("autoShedToggle");
+        if (autoShed === null) {
+          shedBtn.textContent = "--";
+          shedBtn.className = "toggle-btn";
+        } else {
+          shedBtn.textContent = autoShed ? "ON" : "OFF";
+          shedBtn.className = "toggle-btn" + (autoShed ? " active" : "");
+        }
 
         document
           .getElementById("clockWarn")
@@ -1574,6 +1586,17 @@
           renewBtn.className = "toggle-btn";
         }
 
+        // Same reasoning as the clock warning below: with no link, the auto-shed
+        // state is an assertion about the device we can no longer make. Reset
+        // the cached value too, so a reconnect repaints from telemetry rather
+        // than from whatever we last saw.
+        autoShed = null;
+        const shedBtnOff = document.getElementById("autoShedToggle");
+        if (shedBtnOff) {
+          shedBtnOff.textContent = "--";
+          shedBtnOff.className = "toggle-btn";
+        }
+
         // The clock warning is an assertion about the device. With no link we
         // cannot make it, so it comes down with everything else.
         const cw = document.getElementById("clockWarn");
@@ -1851,12 +1874,19 @@
           addAlert("warn", "Offline — cannot change auto-shed.");
           return;
         }
-        autoShed = !autoShed;
-        const btn = document.getElementById("autoShedToggle");
-        btn.textContent = autoShed ? "ON" : "OFF";
-        btn.className = "toggle-btn" + (autoShed ? " active" : "");
-        sendCommand({ cmd: "autoshed", val: autoShed ? 1 : 0 });
-        addAlert("info", "Auto-shed " + (autoShed ? "enabled" : "disabled"));
+        const next = !autoShed;
+        // autoShed is deliberately NOT set here. The device echoes it back in
+        // d.auto once it has stored it — the same discipline as toggleAutoRenew.
+        // Painting the button locally would show the new state whether or not
+        // the command ever reached the ESP32, which is exactly how a disabled
+        // controller sat behind a green ON button through a whole test session.
+        sendCommand({ cmd: "autoshed", val: next ? 1 : 0 });
+        addAlert(
+          "info",
+          "Auto-shed " +
+            (next ? "enable" : "disable") +
+            " requested — awaiting device.",
+        );
       }
 
       function toggleAutoRenew() {
