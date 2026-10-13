@@ -189,6 +189,56 @@
               </button>
             </div>
 
+            <!-- Channel 4: HIGH — protected, never auto-shed -->
+            <div class="channel-row" id="ch4-row">
+              <div class="channel-left">
+                <div class="channel-indicator on" id="ch4-ind"></div>
+                <div>
+                  <div class="channel-name">Refrigeration</div>
+                  <span class="channel-priority" id="ch4-prio">--</span>
+                </div>
+              </div>
+              <div>
+                <div class="channel-metrics">
+                  <div class="metric">
+                    <div class="metric-label">Voltage</div>
+                    <div class="metric-val" id="ch4-v">--</div>
+                    <div class="metric-unit">V</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Current</div>
+                    <div class="metric-val" id="ch4-i">--</div>
+                    <div class="metric-unit">A</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Power</div>
+                    <div class="metric-val" id="ch4-p">--</div>
+                    <div class="metric-unit">W</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Energy</div>
+                    <div class="metric-val" id="ch4-e">--</div>
+                    <div class="metric-unit">kWh</div>
+                  </div>
+                </div>
+                <div class="power-bar">
+                  <div
+                    class="power-bar-fill"
+                    id="ch4-bar"
+                    style="width: 0%; background: #c792ea"
+                  ></div>
+                </div>
+              </div>
+              <button
+                class="toggle-btn active"
+                id="ch4-btn"
+                onclick="toggleChannel(4)"
+              >
+                ON
+              </button>
+            </div>
+          </div>
+
             <!-- Channel 3: MEDIUM -->
             <div class="channel-row" id="ch2-row">
               <div class="channel-left">
@@ -286,56 +336,6 @@
                 ON
               </button>
             </div>
-
-            <!-- Channel 4: HIGH — protected, never auto-shed -->
-            <div class="channel-row" id="ch4-row">
-              <div class="channel-left">
-                <div class="channel-indicator on" id="ch4-ind"></div>
-                <div>
-                  <div class="channel-name">Refrigeration</div>
-                  <span class="channel-priority" id="ch4-prio">--</span>
-                </div>
-              </div>
-              <div>
-                <div class="channel-metrics">
-                  <div class="metric">
-                    <div class="metric-label">Voltage</div>
-                    <div class="metric-val" id="ch4-v">--</div>
-                    <div class="metric-unit">V</div>
-                  </div>
-                  <div class="metric">
-                    <div class="metric-label">Current</div>
-                    <div class="metric-val" id="ch4-i">--</div>
-                    <div class="metric-unit">A</div>
-                  </div>
-                  <div class="metric">
-                    <div class="metric-label">Power</div>
-                    <div class="metric-val" id="ch4-p">--</div>
-                    <div class="metric-unit">W</div>
-                  </div>
-                  <div class="metric">
-                    <div class="metric-label">Energy</div>
-                    <div class="metric-val" id="ch4-e">--</div>
-                    <div class="metric-unit">kWh</div>
-                  </div>
-                </div>
-                <div class="power-bar">
-                  <div
-                    class="power-bar-fill"
-                    id="ch4-bar"
-                    style="width: 0%; background: #c792ea"
-                  ></div>
-                </div>
-              </div>
-              <button
-                class="toggle-btn active"
-                id="ch4-btn"
-                onclick="toggleChannel(4)"
-              >
-                ON
-              </button>
-            </div>
-          </div>
 
           <!-- POWER CHART -->
           <div class="chart-section">
