@@ -118,6 +118,7 @@ class Recorder:
         # here restores chronological order for the whole write path.
         self._write_lock = asyncio.Lock()
         self._pending_topup = 0.0      # top-ups seen before the row was opened
+        self._last_roll_ts: Optional[datetime] = None
         self._last_prune: Optional[datetime] = None
 
     # ── Startup ───────────────────────────────────────────────
@@ -300,8 +301,18 @@ class Recorder:
                 out.append((ts, "channel_on" if c.on == 1 else "channel_off",
                             i, None, c.name))
             if c.shed != p.shed:
+                # On shed_start the relay is already open in `cur`, so c.p is
+                # ~0 W. The power the channel was drawing is in `prev`.
+                watts = p.p if c.shed == 1 else c.p
                 out.append((ts, "shed_start" if c.shed == 1 else "shed_end",
-                            i, c.p, c.name))
+                            i, watts, c.name))
+            # The device's own confirmation of a reorder or a protection
+            # change. Pairs with the cmd_prio / cmd_protect intent rows.
+            if c.prio != p.prio:
+                out.append((ts, "rank_changed", i, float(c.prio), c.name))
+            if c.prot is not None and p.prot is not None and c.prot != p.prot:
+                out.append((ts, "protect_on" if c.prot == 1 else "protect_off",
+                            i, None, c.name))
 
         if cur.shed != prev.shed:
             out.append((ts,
@@ -327,7 +338,14 @@ class Recorder:
             rolled = True
         elif cur.te < prev.te - 0.001:
             rolled = True
+        # One reset can trip both signals on consecutive readings: te drops
+        # on the first, el on the next. Without this guard each fires its
+        # own rollover and leaves a ~3-second phantom period row behind.
+        if rolled and self._last_roll_ts is not None \
+                and (ts - self._last_roll_ts).total_seconds() < 30.0:
+            rolled = False
         if rolled:
+            self._last_roll_ts = ts
             out.append((ts, "period_start", None, cur.q, None))
 
         # Distinguishing a top-up from a quota edit: Predictor_SetQuota writes

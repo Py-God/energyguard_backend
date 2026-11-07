@@ -35,6 +35,7 @@ from app.models.schemas import (
     StatusResponse,
 )
 from app.store import store
+from app.recorder import recorder
 
 router = APIRouter(prefix="/api/commands", tags=["Commands"])
 
@@ -106,7 +107,9 @@ async def enqueue_command(command: AnyCommand):
     {"cmd": "reset_energy"}
     ```
     """
-    store.enqueue_command(command.model_dump())
+    cmd = command.model_dump()
+    store.enqueue_command(cmd)
+    recorder.note_command(cmd)
     return StatusResponse(
         status="queued",
         message=f"Command '{command.cmd}' queued. Will be delivered on next ESP32 poll."
