@@ -333,9 +333,16 @@ class Recorder:
         # that predates the el field — both are checked because either alone
         # has a blind spot: el is absent on old builds, and te legitimately
         # stays near zero across a rollover on an idle system.
+        
+        # el is only trustworthy once the wall clock is synced: before NTP
+        # answers after a restart, the firmware reports uptime, so el falls
+        # to ~0 although the period carries on. And te is only a fallback for
+        # firmware that predates el — on current firmware a te drop means the
+        # meters went silent, not that a period began.
         rolled = False
-        if cur.el is not None and prev.el is not None and cur.el < prev.el - 0.02:
-            rolled = True
+        if cur.el is not None and prev.el is not None:
+            if cur.ck == 1 and prev.ck == 1 and cur.el < prev.el - 0.02:
+                rolled = True
         elif cur.te < prev.te - 0.001:
             rolled = True
         # One reset can trip both signals on consecutive readings: te drops
